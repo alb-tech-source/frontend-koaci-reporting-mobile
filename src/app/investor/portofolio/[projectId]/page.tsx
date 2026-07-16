@@ -1,10 +1,10 @@
 import { InvestorShell } from "@/components/layout/InvestorShell";
 
-export default function ProjectDetailPage({
+export default async function ProjectDetailPage({
   params,
 }: {
-  params: { projectId: string };
+  params: Promise<{ projectId: string }>;
 }) {
-  const { projectId } = params;
+  const { projectId } = await params;
   return <InvestorShell>...{projectId}...</InvestorShell>;
 }

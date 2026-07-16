@@ -1,8 +1,8 @@
 import { ChevronRight, TrendingUp } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/shared/components/ui/badge";
+import { Card } from "@/shared/components/ui/card";
+import { Progress } from "@/shared/components/ui/progress";
 import { cn } from "@/shared/lib/utils";
 import type { InvestmentProject } from "./types";
 import { formatIDR, statusBadgeVariant, statusLabel } from "./utils";

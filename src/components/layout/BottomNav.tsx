@@ -13,10 +13,10 @@ export interface BottomNavItem {
 }
 
 export const defaultInvestorNav: BottomNavItem[] = [
-  { to: "/", label: "Beranda", icon: Home },
-  { to: "/portofolio", label: "Portofolio", icon: Wallet },
-  { to: "/laporan", label: "Laporan", icon: FileText },
-  { to: "/akun", label: "Akun", icon: User },
+  { to: "/", label: "Login", icon: Home },
+  { to: "/investor/portofolio", label: "Portofolio", icon: Wallet },
+  { to: "/investor/laporan", label: "Laporan", icon: FileText },
+  { to: "/investor/akun", label: "Akun", icon: User },
 ];
 
 interface BottomNavProps {
@@ -25,7 +25,6 @@ interface BottomNavProps {
 
 export function BottomNav({ items = defaultInvestorNav }: BottomNavProps) {
   const pathname = usePathname();
-  <Link href="/investors">Investor</Link>;
 
   return (
     <nav

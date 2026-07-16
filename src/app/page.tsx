@@ -1,65 +1,84 @@
-import Image from "next/image";
+// mobile/src/app/page.tsx — LOGIN, TANPA shell/bottom nav
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { BookOpen, Globe, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { KoaciLogo } from "@/shared/components/ui/KoaciLogo";
+import { LoginForm, type LoginFormValues } from "@/features/auth/LoginForm";
+import api from "@/shared/lib/axios";
+
+const quickLinks = [
+  { icon: MessageCircle, label: "Bantuan", hint: "WhatsApp CS" },
+  { icon: BookOpen, label: "Panduan", hint: "Cara mulai" },
+  { icon: Globe, label: "koaci.id", hint: "Website resmi" },
+];
+
+export default function InvestorLoginPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleLogin({ email, password }: LoginFormValues) {
+    setError("");
+    setLoading(true);
+    try {
+      const { data } = await api.post("/auth/login", { email, password });
+      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400`;
+      localStorage.setItem("access_token", data.accessToken);
+      localStorage.setItem("refresh_token", data.refreshToken);
+      router.push("/portofolio");
+    } catch {
+      setError("Email atau password salah.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-muted/40">
+      <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-hidden bg-background">
+        <div className="relative bg-gradient-brand pb-24 pt-12 text-brand-foreground">
+          <div aria-hidden className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+          <div aria-hidden className="absolute -left-10 top-24 h-40 w-40 rounded-full bg-accent-teal/30 blur-2xl" />
+          <div className="relative flex flex-col items-center px-6">
+            <KoaciLogo size="lg" className="flex-col text-brand-foreground" />
+            <h1 className="mt-5 text-center text-2xl font-semibold tracking-tight">Koaci Investor</h1>
+            <p className="mt-1 text-center text-sm text-brand-foreground/80">
+              Pantau investasi syariah Anda dengan tenang
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-brand-foreground/85">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              <span>Aman &amp; sesuai prinsip syariah</span>
+            </div>
+          </div>
+          <svg aria-hidden="true" viewBox="0 0 500 60" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-10 w-full text-background">
+            <path d="M0,60 C150,0 350,0 500,60 Z" fill="currentColor" />
+          </svg>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="relative -mt-14 flex-1 px-5 pb-8">
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-elevated">
+            <div className="mb-5 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-brand" aria-hidden="true" />
+              <p className="text-sm font-medium text-foreground">Selamat datang kembali</p>
+            </div>
+            <LoginForm variant="investor" loading={loading} errorMessage={error} onSubmit={handleLogin} />
+          </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            {quickLinks.map(({ icon: Icon, label, hint }) => (
+              <button key={label} type="button" className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-colors hover:border-brand/40 hover:bg-accent">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand/10 text-brand">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="text-xs font-medium text-foreground">{label}</span>
+                <span className="text-[10px] text-muted-foreground">{hint}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

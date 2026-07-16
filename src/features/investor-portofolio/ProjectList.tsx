@@ -1,3 +1,5 @@
+"use client";
+
 import { useRouter } from "next/navigation"
 
 import type { InvestmentProject } from "./types";
@@ -8,7 +10,7 @@ interface ProjectListProps {
 }
 
 export function ProjectList({ projects }: ProjectListProps) {
-  const router = useRouter(); router.push('/path');
+  const router = useRouter();
 
   return (
     <section className="space-y-3">
