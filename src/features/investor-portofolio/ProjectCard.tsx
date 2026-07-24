@@ -12,7 +12,7 @@ interface ProjectCardProps {
   onClick?: () => void;
 }
 
-export function ProjectCard({ project, onClick }: ProjectCardProps) {
+export function ProjectCard({ project, onClick }: Readonly<ProjectCardProps>) {
   return (
     <Card
       interactive={Boolean(onClick)}

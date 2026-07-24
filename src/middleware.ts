@@ -10,8 +10,10 @@ export function middleware(request: NextRequest) {
 
   if (path === "/" && token) {
     try {
-      jwtDecode(token);
-      return NextResponse.redirect(new URL("/investor/portofolio", request.url));
+      const decoded: any = jwtDecode(token);
+      if (decoded.role === "investor") {
+        return NextResponse.redirect(new URL("/investor/portofolio", request.url));
+      }
     } catch {
       // token rusak, tetap di halaman login
     }
@@ -36,5 +38,9 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", `${PROTECTED_PREFIX}/:path*`],
+  matcher: [
+    "/",                  
+    "/investor/:path*",   
+    "/unauthorized"       
+  ],
 };

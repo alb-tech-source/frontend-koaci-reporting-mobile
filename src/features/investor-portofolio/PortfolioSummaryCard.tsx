@@ -13,7 +13,7 @@ export function PortfolioSummaryCard({
   investorName,
   totalActiveInvestment,
   activeProjects,
-}: PortfolioSummaryCardProps) {
+}: Readonly<PortfolioSummaryCardProps>) {
   return (
     <Card className="relative overflow-hidden bg-gradient-brand p-5 text-brand-foreground">
       <div className="relative z-10">

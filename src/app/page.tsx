@@ -1,12 +1,17 @@
-// mobile/src/app/page.tsx — LOGIN, TANPA shell/bottom nav
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Globe, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
-import { KoaciLogo } from "@/shared/components/ui/KoaciLogo";
+import { KoaciLogo } from "@/shared/components/KoaciLogo";
 import { LoginForm, type LoginFormValues } from "@/features/auth/LoginForm";
+import { jwtDecode } from "jwt-decode";
 import api from "@/shared/lib/axios";
+
+interface JwtPayload {
+  role : string;
+  [key: string]: unknown;
+}
 
 const quickLinks = [
   { icon: MessageCircle, label: "Bantuan", hint: "WhatsApp CS" },
@@ -24,12 +29,27 @@ export default function InvestorLoginPage() {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400`;
-      localStorage.setItem("access_token", data.accessToken);
-      localStorage.setItem("refresh_token", data.refreshToken);
-      router.push("/portofolio");
-    } catch {
-      setError("Email atau password salah.");
+
+      const { accessToken, refreshToken } = data.data.tokens;
+
+      const decodedToken = jwtDecode<JwtPayload>(accessToken);
+      if (decodedToken.role !== "investor") {
+        setError("Anda tidak memiliki akses sebagai investor. Silakan gunakan akun yang sesuai.");
+        return;
+      } 
+
+      document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
+
+      router.push("/investor/portofolio");
+
+    } catch (err: any) {
+      if (err?.response?.status === 404 || err?.response?.status === 401) {
+        setError("Email atau password salah.");
+      } else {
+        setError("Terjadi kesalahan saat login. Silakan coba lagi.");
+      }
     } finally {
       setLoading(false);
     }

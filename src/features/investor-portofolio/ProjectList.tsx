@@ -9,7 +9,7 @@ interface ProjectListProps {
   projects: InvestmentProject[];
 }
 
-export function ProjectList({ projects }: ProjectListProps) {
+export function ProjectList({ projects }: Readonly<ProjectListProps>) {
   const router = useRouter();
 
   return (
@@ -23,7 +23,7 @@ export function ProjectList({ projects }: ProjectListProps) {
             key={project.id}
             project={project}
             onClick={() =>
-              router.push(`/portofolio/${project.id}`)
+              router.push(`/investor/portofolio/${project.id}`)
             }
           />
         ))}

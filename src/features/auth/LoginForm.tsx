@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link"; // Tambahkan import Link dari Next.js
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -17,7 +18,12 @@ export interface LoginFormProps {
   onSubmit?: (values: LoginFormValues) => void;
 }
 
-export function LoginForm({ variant, loading, errorMessage, onSubmit }: LoginFormProps) {
+export function LoginForm({
+  variant,
+  loading,
+  errorMessage,
+  onSubmit,
+}: Readonly<LoginFormProps>) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -71,13 +77,13 @@ export function LoginForm({ variant, loading, errorMessage, onSubmit }: LoginFor
         {loading ? "Memproses..." : "Masuk"}
       </Button>
       <div className="text-center">
-        <a
-          href="#"
+        {/* Ganti tag <button> mati menjadi <Link> yang aktif */}
+        <Link
+          href="/login/lupa-password"
           className="inline-block text-sm text-muted-foreground transition-colors hover:text-brand"
-          onClick={(e) => e.preventDefault()}
         >
           Lupa password?
-        </a>
+        </Link>
       </div>
     </form>
   );
