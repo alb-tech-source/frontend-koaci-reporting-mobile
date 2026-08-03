@@ -7,16 +7,28 @@ import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { forgotPassword } from "@/shared/lib/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
-    setSubmitted(true);
-  };
+    setLoading(true);
+    setError("");
+    try {
+      await forgotPassword(email);
+      setSubmitted(true); // tampilkan state "Cek Email Anda" (UI sudah ada dari Lovable)
+    } catch {
+      setError("Gagal mengirim link reset. Periksa email Anda dan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-muted/40">
