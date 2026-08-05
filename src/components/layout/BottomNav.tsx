@@ -13,7 +13,7 @@ export interface BottomNavItem {
 }
 
 export const defaultInvestorNav: BottomNavItem[] = [
-  { to: "/investor/dashboard", label: "Beranda", icon: Home },
+  { to: "/investor/beranda", label: "Beranda", icon: Home },
   { to: "/investor/portofolio", label: "Portofolio", icon: Wallet },
   { to: "/investor/laporan", label: "Laporan", icon: FileText },
   { to: "/investor/akun", label: "Akun", icon: User },

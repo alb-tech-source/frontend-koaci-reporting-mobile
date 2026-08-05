@@ -1,0 +1,19 @@
+# <tipe>(<scope>): <deskripsi singkat maks 50 karakter>
+# |<----  Gunakan kalimat imperatif (huruf kecil semua, tanpa titik) ---->|
+
+# <deskripsi detail: jelaskan MENGAPA perubahan ini dibuat, bukan BAGAIMANA>
+# |<----  Bungkus teks pada 72 karakter  ---->|
+
+# <footer: referensi tiket/issue, misal: Closes KRA-23>
+
+# --- DAFTAR TIPE COMMIT ---
+# feat     : Fitur baru
+# fix      : Perbaikan bug/error
+# docs     : Perubahan pada dokumentasi (README, dsb)
+# style    : Formatting, titik koma, spasi (tidak mengubah logika)
+# refactor : Restrukturisasi kode (bukan fitur baru atau perbaikan bug)
+# perf     : Perubahan kode untuk meningkatkan performa
+# test     : Menambah/memperbaiki testing
+# build    : Perubahan sistem build (npm, webpack, konfigurasi Next.js)
+# ci       : Perubahan file konfigurasi CI/CD (GitHub Actions, dll)
+# chore    : Pembaruan task rutin (update dependencies, dsb)

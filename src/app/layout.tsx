@@ -15,8 +15,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={inter.className}>
-        <Providers>{children}</Providers>
+      <body className={`${inter.className} min-h-screen bg-slate-100 dark:bg-zinc-950 antialiased`}>
+        <Providers>
+          <main className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-background shadow-2xl">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );
