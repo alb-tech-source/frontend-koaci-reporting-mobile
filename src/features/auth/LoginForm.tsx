@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link"; // Tambahkan import Link dari Next.js
+import Link from "next/link";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -16,6 +16,7 @@ export interface LoginFormProps {
   loading?: boolean;
   errorMessage?: string;
   onSubmit?: (values: LoginFormValues) => void;
+  forgotPasswordHref?: string; 
 }
 
 export function LoginForm({
@@ -23,6 +24,7 @@ export function LoginForm({
   loading,
   errorMessage,
   onSubmit,
+  forgotPasswordHref = "/login/lupa-password", 
 }: Readonly<LoginFormProps>) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,9 +79,9 @@ export function LoginForm({
         {loading ? "Memproses..." : "Masuk"}
       </Button>
       <div className="text-center">
-        {/* Ganti tag <button> mati menjadi <Link> yang aktif */}
+        {/* URL dinamis dipasang di sini */}
         <Link
-          href="/login/lupa-password"
+          href={forgotPasswordHref}
           className="inline-block text-sm text-muted-foreground transition-colors hover:text-brand"
         >
           Lupa password?
