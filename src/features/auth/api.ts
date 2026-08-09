@@ -20,7 +20,7 @@ export async function registerWithEmail(payload: {
   return data;
 }
 
-export async function loginWithGoogle(idToken: string) {
-  const { data } = await api.post("/auth/google", { idToken });
-  return data; 
+export async function loginWithGoogle(credential: string) {
+  const { data } = await api.post("/auth/google", { credential });
+  return data;
 }

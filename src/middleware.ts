@@ -6,7 +6,6 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
   const path = request.nextUrl.pathname;
 
-  // Redirect dari halaman root berdasarkan role
   if (path === "/" && token) {
     try {
       const decoded: any = jwtDecode(token);
@@ -17,11 +16,11 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/user/beranda", request.url));
       }
     } catch {
-      // token rusak, tetap di login
+      // Token rusak, biarkan di halaman login
     }
   }
 
-  // Protect /investor/* untuk investor saja
+  // Proteksi rute /investor/* hanya untuk role "investor"
   if (path.startsWith("/investor")) {
     if (!token) return NextResponse.redirect(new URL("/", request.url));
     try {
@@ -34,7 +33,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Protect /user/* untuk user saja
+  // Proteksi rute /user/* hanya untuk role "user"
   if (path.startsWith("/user")) {
     if (!token) return NextResponse.redirect(new URL("/", request.url));
     try {

@@ -16,8 +16,10 @@ function getTokenFromCookie(): string | null {
 
 export function getCurrentUser(): JwtPayload | null {
   if (typeof window === "undefined") return null;
+  
   const token = getTokenFromCookie() || localStorage.getItem("access_token");
   if (!token) return null;
+  
   try {
     return jwtDecode<JwtPayload>(token);
   } catch {
@@ -39,9 +41,12 @@ export function isUser(): boolean {
 
 export function logout(redirectTo: string = "/") {
   if (typeof window === "undefined") return;
+  
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  
   document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
+  
   window.location.href = redirectTo;
 }
 
