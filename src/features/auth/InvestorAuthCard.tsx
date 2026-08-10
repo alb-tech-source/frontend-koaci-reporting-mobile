@@ -11,12 +11,14 @@ import { LoginForm, type LoginFormValues } from "./LoginForm";
 import { RegisterForm, type RegisterFormValues } from "./RegisterForm";
 import api from "@/shared/lib/axios";
 
-interface JwtPayload {
+export interface JwtPayload {
   role: string;
   [key: string]: unknown;
 }
 
 type AuthTab = "login" | "register";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const tabs: { key: AuthTab; label: string }[] = [
   { key: "login", label: "Masuk" },
@@ -43,9 +45,9 @@ export function InvestorAuthCard() {
     setSuccess("");
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/login", { 
-        email: values.email, 
-        password: values.password 
+      const { data } = await api.post("/auth/login", {
+        email: values.email,
+        password: values.password,
       });
       const { accessToken, refreshToken } = data.data.tokens;
 
@@ -54,7 +56,7 @@ export function InvestorAuthCard() {
       localStorage.setItem("refresh_token", refreshToken);
 
       const decodedToken = jwtDecode<JwtPayload>(accessToken);
-      
+
       // Redirect dinamis berdasarkan role
       if (decodedToken.role === "investor") {
         router.push("/investor/portofolio");
@@ -83,7 +85,7 @@ export function InvestorAuthCard() {
         email: values.email,
         password: values.password,
       });
-      
+
       setSuccess("Pendaftaran berhasil! Silakan login.");
       setFormKey((k) => k + 1);
       setTab("login");
@@ -94,36 +96,48 @@ export function InvestorAuthCard() {
     }
   };
 
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      window.location.href = `${BASE_URL}/auth/google`;
+    } catch (err) {
+      setError("Login Google gagal. Pastikan email Anda terdaftar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 3. Logika Google OAuth menggunakan @react-oauth/google
-  const handleGoogleAuth = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      setError("");
-      try {
-        // Kirim access_token Google ke backend
-        const { data } = await api.post("/auth/google", { 
-          idToken: tokenResponse.access_token 
-        });
-        const { accessToken, refreshToken } = data.data.tokens;
+  // const handleGoogleAuth = useGoogleLogin({
+  //   onSuccess: async (tokenResponse) => {
+  //     setLoading(true);
+  //     setError("");
+  //     try {
+  //       // Kirim access_token Google ke backend
+  //       const { data } = await api.post("/auth/google", {
+  //         idToken: tokenResponse.access_token
+  //       });
+  //       const { accessToken, refreshToken } = data.data.tokens;
 
-        document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
-        localStorage.setItem("access_token", accessToken);
-        localStorage.setItem("refresh_token", refreshToken);
+  //       document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
+  //       localStorage.setItem("access_token", accessToken);
+  //       localStorage.setItem("refresh_token", refreshToken);
 
-        const decoded = jwtDecode<JwtPayload>(accessToken);
-        if (decoded.role === "investor") {
-          router.push("/investor/portofolio");
-        } else {
-          router.push("/user/beranda");
-        }
-      } catch (err) {
-        setError("Login Google gagal. Pastikan email Anda terdaftar.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: () => setError("Google Login dibatalkan atau terjadi kesalahan."),
-  });
+  //       const decoded = jwtDecode<JwtPayload>(accessToken);
+  //       if (decoded.role === "investor") {
+  //         router.push("/investor/portofolio");
+  //       } else {
+  //         router.push("/user/beranda");
+  //       }
+  //     } catch (err) {
+  //       setError("Login Google gagal. Pastikan email Anda terdaftar.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   },
+  //   onError: () => setError("Google Login dibatalkan atau terjadi kesalahan."),
+  // });
 
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-elevated">
@@ -172,7 +186,7 @@ export function InvestorAuthCard() {
             variant="investor"
             loading={loading}
             onSubmit={handleLogin}
-            forgotPasswordHref="/login/investor/lupa-password"
+            forgotPasswordHref="/auth/lupa-password"
           />
           <AuthDivider />
           <GoogleAuthButton
@@ -183,7 +197,11 @@ export function InvestorAuthCard() {
         </div>
       ) : (
         <div className="space-y-4">
-          <RegisterForm key={`register-${formKey}`} loading={loading} onSubmit={handleRegister} />
+          <RegisterForm
+            key={`register-${formKey}`}
+            loading={loading}
+            onSubmit={handleRegister}
+          />
           <AuthDivider />
           <GoogleAuthButton
             label="Daftar dengan Google"
@@ -191,8 +209,8 @@ export function InvestorAuthCard() {
             onClick={() => handleGoogleAuth()}
           />
           <p className="rounded-xl bg-muted px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-            Dengan mendaftar, akun Anda akan mendapatkan akses terbatas. Admin akan memverifikasi
-            dan mengaktifkan akses investor Anda.
+            Dengan mendaftar, akun Anda akan mendapatkan akses terbatas. Admin
+            akan memverifikasi dan mengaktifkan akses investor Anda.
           </p>
         </div>
       )}
