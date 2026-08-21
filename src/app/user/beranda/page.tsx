@@ -1,5 +1,6 @@
-"use client"; 
+"use client";
 
+import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -14,13 +15,17 @@ import { InvestorShell } from "@/components/layout/InvestorShell";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
-import {
-  getCurrentUser,
-  getInitials,
-  SUPPORT_EMAIL,
-  WHATSAPP_CS_URL,
-} from "@/features/user-area/auth";
 import { userNav } from "@/features/user-area/nav";
+
+import { useAuthStore } from "@/shared/store/authStore";
+
+const SUPPORT_EMAIL = "admin@koaci.id";
+const WHATSAPP_CS_URL = "https://wa.me/6281122334455";
+
+function getInitials(name: string) {
+  if (!name) return "U";
+  return name.substring(0, 2).toUpperCase();
+}
 
 const highlights: { icon: LucideIcon; title: string; desc: string }[] = [
   {
@@ -41,7 +46,18 @@ const highlights: { icon: LucideIcon; title: string; desc: string }[] = [
 ];
 
 export default function UserBerandaPage() {
-  const user = getCurrentUser() || { name: "Pengguna", verified: false };
+  const userState = useAuthStore((state) => state.user);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const displayName = userState?.firstname ? `${userState.firstname} ${userState.lastname ?? ''}`.trim() : "Pengguna";
+  
+  const isVerified = false; 
+
+  if (!mounted) {
+    return <InvestorShell navItems={userNav}><div /></InvestorShell>;
+  }
 
   return (
     <InvestorShell navItems={userNav}>
@@ -50,15 +66,15 @@ export default function UserBerandaPage() {
         <Card className="relative overflow-hidden bg-gradient-brand p-5 text-brand-foreground">
           <div className="relative z-10 flex items-center gap-4">
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/20 text-lg font-bold backdrop-blur">
-              {getInitials(user.name)}
+              {getInitials(displayName)}
             </span>
             <div className="min-w-0">
               <h1 className="truncate text-lg font-semibold tracking-tight">
-                Halo, {user.name}!
+                Halo, {displayName}!
               </h1>
               <div className="mt-1.5">
-                <Badge variant={user.verified ? "active" : "pending"}>
-                  {user.verified ? "Terverifikasi" : "Menunggu Verifikasi"}
+                <Badge variant={isVerified ? "active" : "pending"}>
+                  {isVerified ? "Terverifikasi" : "Menunggu Verifikasi"}
                 </Badge>
               </div>
             </div>
@@ -143,12 +159,13 @@ function StepRow({
   title: string;
   hint: string;
 }>) {
-  const toneClass =
-    tone === "success"
-      ? "bg-success/10 text-success"
-      : tone === "warning"
-        ? "bg-warning/10 text-warning"
-        : "bg-muted text-muted-foreground";
+  const toneStyles = {
+    success: "bg-success/10 text-success",
+    warning: "bg-warning/10 text-warning",
+    muted: "bg-muted text-muted-foreground",
+  };
+  
+  const toneClass = toneStyles[tone];
 
   return (
     <div className="flex items-center gap-3 p-4">

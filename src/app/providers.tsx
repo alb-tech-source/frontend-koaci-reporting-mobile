@@ -2,7 +2,6 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export function Providers({
   children,

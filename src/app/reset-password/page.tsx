@@ -9,7 +9,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { cn } from "@/shared/lib/utils";
-import { resetPassword } from "@/shared/lib/auth";
+import { resetPassword } from "@/features/auth/api";
 
 type Strength = { score: 0 | 1 | 2 | 3; label: string; className: string };
 
@@ -88,7 +88,7 @@ function ResetPasswordSuccess() {
       <p className="text-sm text-muted-foreground">
         Silakan masuk kembali dengan password baru Anda.
       </p>
-      <Link href="/login/investor" className="w-full">
+      <Link href="/" className="w-full">
         <Button variant="primary" size="touch" className="w-full">
           Masuk Sekarang
         </Button>
@@ -235,7 +235,7 @@ function ResetPasswordContent() {
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-background">
         <header className="flex items-center gap-2 border-b border-border px-4 py-3">
           <Link
-            href="/login/investor"
+            href="/"
             className="grid h-9 w-9 place-items-center rounded-lg text-foreground transition-colors hover:bg-muted"
             aria-label="Kembali"
           >

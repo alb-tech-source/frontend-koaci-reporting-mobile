@@ -3,18 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { jwtDecode } from "jwt-decode";
-import { useGoogleLogin } from "@react-oauth/google";
 
 import { AuthDivider, GoogleAuthButton } from "./GoogleAuthButton";
 import { LoginForm, type LoginFormValues } from "./LoginForm";
 import { RegisterForm, type RegisterFormValues } from "./RegisterForm";
-import api from "@/shared/lib/axios";
 
-export interface JwtPayload {
-  role: string;
-  [key: string]: unknown;
-}
+import { login, registerWithEmail, fetchCurrentUser } from "@/features/auth/api";
+import { useAuthStore } from "@/shared/store/authStore";
 
 type AuthTab = "login" | "register";
 
@@ -27,6 +22,8 @@ const tabs: { key: AuthTab; label: string }[] = [
 
 export function InvestorAuthCard() {
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+
   const [tab, setTab] = useState<AuthTab>("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,29 +36,37 @@ export function InvestorAuthCard() {
     setSuccess("");
   };
 
-  // 1. Logika Login Email
   const handleLogin = async (values: LoginFormValues) => {
     setError("");
     setSuccess("");
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/login", {
-        email: values.email,
-        password: values.password,
-      });
-      const { accessToken, refreshToken } = data.data.tokens;
+      await login(values);
 
-      document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
-      localStorage.setItem("access_token", accessToken);
-      localStorage.setItem("refresh_token", refreshToken);
+      const profileResponse = await fetchCurrentUser();
 
-      const decodedToken = jwtDecode<JwtPayload>(accessToken);
+      if (profileResponse?.success && profileResponse.data) {
+        const activeRole = 
+          profileResponse.data.role || 
+          profileResponse.data.user?.role || 
+          "user";
 
-      // Redirect dinamis berdasarkan role
-      if (decodedToken.role === "investor") {
-        router.push("/investor/portofolio");
+        const patchedProfile = {
+          ...profileResponse.data,
+          role: activeRole,
+        };
+
+        setAuth(patchedProfile);
+
+        document.cookie = `user_role=${activeRole}; path=/; max-age=86400; SameSite=Lax`;
+
+        if (activeRole === "investor") {
+          router.push("/investor/portofolio");
+        } else {
+          router.push("/user/beranda");
+        }
       } else {
-        router.push("/user/beranda");
+        setError("Gagal membaca profil pengguna.");
       }
     } catch (err: any) {
       if (err?.response?.status === 404 || err?.response?.status === 401) {
@@ -74,12 +79,12 @@ export function InvestorAuthCard() {
     }
   };
 
-  // 2. Logika Register Email
+  // Logika Register Email
   const handleRegister = async (values: RegisterFormValues) => {
     setError("");
     setLoading(true);
     try {
-      await api.post("/auth/register", {
+      await registerWithEmail({
         firstname: values.firstname,
         lastname: values.lastname,
         email: values.email,
@@ -89,7 +94,7 @@ export function InvestorAuthCard() {
       setSuccess("Pendaftaran berhasil! Silakan login.");
       setFormKey((k) => k + 1);
       setTab("login");
-    } catch (err) {
+    } catch {
       setError("Gagal mendaftar. Email mungkin sudah terdaftar.");
     } finally {
       setLoading(false);
@@ -107,37 +112,6 @@ export function InvestorAuthCard() {
       setLoading(false);
     }
   };
-
-  // 3. Logika Google OAuth menggunakan @react-oauth/google
-  // const handleGoogleAuth = useGoogleLogin({
-  //   onSuccess: async (tokenResponse) => {
-  //     setLoading(true);
-  //     setError("");
-  //     try {
-  //       // Kirim access_token Google ke backend
-  //       const { data } = await api.post("/auth/google", {
-  //         idToken: tokenResponse.access_token
-  //       });
-  //       const { accessToken, refreshToken } = data.data.tokens;
-
-  //       document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
-  //       localStorage.setItem("access_token", accessToken);
-  //       localStorage.setItem("refresh_token", refreshToken);
-
-  //       const decoded = jwtDecode<JwtPayload>(accessToken);
-  //       if (decoded.role === "investor") {
-  //         router.push("/investor/portofolio");
-  //       } else {
-  //         router.push("/user/beranda");
-  //       }
-  //     } catch (err) {
-  //       setError("Login Google gagal. Pastikan email Anda terdaftar.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   },
-  //   onError: () => setError("Google Login dibatalkan atau terjadi kesalahan."),
-  // });
 
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-elevated">

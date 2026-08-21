@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { forgotPassword } from "@/shared/lib/auth";
+import { forgotPassword } from "@/features/auth/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");

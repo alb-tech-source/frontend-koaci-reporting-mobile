@@ -1,30 +1,9 @@
-import { jwtDecode } from "jwt-decode";
 import api from "./axios";
+import { useAuthStore } from "../store/authStore";
 
-interface JwtPayload {
-  role: string;
-  permissions: string[];
-  userId?: string;
-  [key: string]: unknown;
-}
-
-function getTokenFromCookie(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = new RegExp(/(^|;\s*)access_token=([^;]+)/).exec(document.cookie);
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
-export function getCurrentUser(): JwtPayload | null {
+export function getCurrentUser() {
   if (typeof window === "undefined") return null;
-  
-  const token = getTokenFromCookie() || localStorage.getItem("access_token");
-  if (!token) return null;
-  
-  try {
-    return jwtDecode<JwtPayload>(token);
-  } catch {
-    return null;
-  }
+  return useAuthStore.getState().user;
 }
 
 export function getCurrentRole(): string | null {
@@ -39,23 +18,29 @@ export function isUser(): boolean {
   return getCurrentRole() === "user";
 }
 
-export function logout(redirectTo: string = "/") {
+export function hasPermission(permissionKey: string): boolean {
+  const user = getCurrentUser();
+  if (user?.role === "superadmin") return true;
+  return user?.permissions?.includes(permissionKey) ?? false;
+}
+
+export async function logout(redirectTo: string = "/") {
   if (typeof window === "undefined") return;
-  
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  
-  document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
-  
-  window.location.href = redirectTo;
-}
 
-export async function forgotPassword(email: string) {
-  const { data } = await api.post("/auth/forgot-password", { email });
-  return data;
-}
+  try {
+    await api.post("/auth/logout");
+  } catch (error) {
+    console.error("Gagal memanggil API logout di server (Error 500), memaksa logout lokal...", error);
+  } finally {
+    useAuthStore.getState().clearAuth();
+    
+    const pastDate = "Thu, 01 Jan 1970 00:00:00 GMT";
+    
+    document.cookie = `user_role=; path=/; expires=${pastDate}; SameSite=Lax`;
+    
+    document.cookie = `access_token=; path=/; expires=${pastDate}; SameSite=Lax`;
+    document.cookie = `refresh_token=; path=/; expires=${pastDate}; SameSite=Lax`;
 
-export async function resetPassword(token: string, newPassword: string) {
-  const { data } = await api.post("/auth/reset-password", { token, newPassword });
-  return data;
+    window.location.href = redirectTo;
+  }
 }

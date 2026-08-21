@@ -79,7 +79,6 @@ export function LoginForm({
         {loading ? "Memproses..." : "Masuk"}
       </Button>
       <div className="text-center">
-        {/* URL dinamis dipasang di sini */}
         <Link
           href={forgotPasswordHref}
           className="inline-block text-sm text-muted-foreground transition-colors hover:text-brand"

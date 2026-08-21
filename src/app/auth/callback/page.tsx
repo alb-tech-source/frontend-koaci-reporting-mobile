@@ -1,54 +1,53 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
-import { JwtPayload } from "@/features/auth/InvestorAuthCard";
+import { useAuthStore } from "@/shared/store/authStore";
+import api from "@/shared/lib/axios";
 
 const CallbackGoogleLogin = () => {
-  const [accessToken, setAccessToken] = useState<string | null>("");
-  const [refreshToken, setRefreshToken] = useState<string | null>("");
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
-  const handleLogin = () => {
-    try {
-      document.cookie = `access_token=${accessToken}; path=/; max-age=86400`;
-      localStorage.setItem("access_token", accessToken as string);
-      localStorage.setItem("refresh_token", refreshToken as string);
+  useEffect(() => {
+    const fetchProfileAndRedirect = async () => {
+      try {
+        const { data } = await api.get("/auth/me"); 
 
-      const decodedToken = jwtDecode<JwtPayload>(accessToken as string);
+        if (data?.data) {
 
-      // Redirect dinamis berdasarkan role
-      if (decodedToken.role === "investor") {
-        router.push("/investor/portofolio");
-      } else {
-        router.push("/user/beranda");
+          setAuth(data.data);
+
+          document.cookie = `user_role=${data.data.role}; path=/; max-age=86400`;
+
+          if (data.data.role === "investor") {
+            router.push("/investor/beranda");
+          } else {
+            router.push("/user/beranda");
+          }
+        } else {
+          throw new Error("Gagal mengambil profil.");
+        }
+      } catch (error) {
+        console.error("Callback OAuth gagal", error);
+        router.push("/");
       }
-    } catch (err) {
-      router.push("/");
-    }
-  };
+    };
 
-  // Get token
-  useEffect(() => {
-    if (searchParams) {
-      const token = searchParams.get("access_token");
-      const refreshToken = searchParams.get("refresh_token");
+    fetchProfileAndRedirect();
+  }, [router, setAuth]);
 
-      setAccessToken(token);
-      setRefreshToken(refreshToken);
-    }
-  }, [searchParams]);
-
-  // Redirect and save token
-  useEffect(() => {
-    if (accessToken && refreshToken) {
-      handleLogin();
-    }
-  }, [accessToken]);
-  return <div></div>;
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-sm text-muted-foreground">Memproses login Google...</p>
+    </div>
+  );
 };
 
-export default CallbackGoogleLogin;
+const CallbackPage = () => (
+  <Suspense fallback={<div>Memuat...</div>}>
+    <CallbackGoogleLogin />
+  </Suspense>
+);
+
+export default CallbackPage;
