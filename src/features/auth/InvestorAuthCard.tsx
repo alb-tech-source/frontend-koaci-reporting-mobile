@@ -41,32 +41,25 @@ export function InvestorAuthCard() {
     setSuccess("");
     setLoading(true);
     try {
-      await login(values);
+      const loginResponse = await login(values);
+
+      if (!loginResponse?.success) {
+        throw new Error("Gagal login dari server.");
+      }
 
       const profileResponse = await fetchCurrentUser();
-
+      
       if (profileResponse?.success && profileResponse.data) {
-        const activeRole = 
-          profileResponse.data.role || 
-          profileResponse.data.user?.role || 
-          "user";
-
-        const patchedProfile = {
-          ...profileResponse.data,
-          role: activeRole,
-        };
-
-        setAuth(patchedProfile);
+        const activeRole = profileResponse.data.role || profileResponse.data.user?.role || "user";
+        
+        setAuth({ ...profileResponse.data, role: activeRole });
 
         document.cookie = `user_role=${activeRole}; path=/; max-age=86400; SameSite=Lax`;
 
-        if (activeRole === "investor") {
-          router.push("/investor/portofolio");
-        } else {
-          router.push("/user/beranda");
-        }
+        if (activeRole === "investor") router.push("/investor/beranda");
+        else router.push("/user/beranda");
       } else {
-        setError("Gagal membaca profil pengguna.");
+        throw new Error("Gagal membaca profil pengguna.");
       }
     } catch (err: any) {
       if (err?.response?.status === 404 || err?.response?.status === 401) {

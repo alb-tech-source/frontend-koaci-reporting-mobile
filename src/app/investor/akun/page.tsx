@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, LogOut } from "lucide-react";
+import { toast } from "sonner";
 
 import { InvestorShell } from "@/components/layout/InvestorShell";
 import { Badge } from "@/shared/components/ui/badge";
@@ -18,6 +19,7 @@ import {
 import { DocumentListPanel } from "@/features/investor-akun/DocumentListPanel";
 import { 
   fetchInvestorDocuments,
+  getDocumentDownloadUrl,
   type InvestorDocument,
 } from "@/features/investor-akun/documents";
 import { fetchInvestorProfile } from "@/features/investor-akun/api";
@@ -30,9 +32,7 @@ import { logout } from "@/shared/lib/auth";
 
 function initials(first?: string, last?: string) {
   const f = first ? first.charAt(0) : "U";
-  
   const l = last ? last.charAt(0) : "";
-  
   return `${f}${l}`.toUpperCase();
 }
 
@@ -55,8 +55,31 @@ export default function InvestorAkunPage() {
 
   const requestVerification = async () => {
     if (!profile) return;
-    await sendVerifyEmail(profile.email);
-    void queryClient.invalidateQueries({ queryKey: ["investor", "profile"] });
+    try {
+      await sendVerifyEmail(profile.email);
+      toast.success("Email verifikasi berhasil dikirim!");
+      void queryClient.invalidateQueries({ queryKey: ["investor", "profile"] });
+    } catch (error) {
+      toast.error("Gagal mengirim email verifikasi. Coba lagi nanti.");
+    }
+  };
+
+  const handleDownloadDocument = async (doc: InvestorDocument) => {
+    try {
+      const url = await getDocumentDownloadUrl(doc.id);
+      
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.name; 
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error("Gagal mengunduh dokumen.");
+    }
   };
 
   const header = (
@@ -84,13 +107,21 @@ export default function InvestorAkunPage() {
   if (profileQuery.isError || !profile) {
     return (
       <InvestorShell header={header}>
-        <Card className="flex flex-col items-center gap-3 p-8 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-danger/10 text-danger">
-            <AlertTriangle className="h-6 w-6" aria-hidden="true" />
-          </span>
-          <p className="text-sm text-muted-foreground">Gagal memuat data profil. Coba lagi.</p>
-          <Button size="sm" onClick={() => void profileQuery.refetch()}>Coba Lagi</Button>
-        </Card>
+        <div className="space-y-5">
+          <Card className="flex flex-col items-center gap-3 p-8 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-danger/10 text-danger">
+              <AlertTriangle className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <p className="text-sm text-muted-foreground">Gagal memuat data profil. Coba lagi.</p>
+            <Button size="sm" onClick={() => void profileQuery.refetch()}>Coba Lagi</Button>
+          </Card>
+
+          {/* ✅ Tombol Logout ditambahkan di sini agar user tidak terjebak */}
+          <Button variant="destructive" className="w-full" onClick={() => logout("/")}>
+            <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+            Keluar dari Akun
+          </Button>
+        </div>
       </InvestorShell>
     );
   }
@@ -135,8 +166,7 @@ export default function InvestorAkunPage() {
             ) : (
               <DocumentListPanel
                 documents={documents}
-                // ✅ Hapus onDelete (atau hubungkan langsung ke API delete jika nanti ada)
-                onDownload={(doc) => console.info("[documents] download", doc.id)}
+                onDownload={handleDownloadDocument}
               />
             )}
           </TabsContent>

@@ -1,44 +1,54 @@
 import axios from "axios";
-import { useAuthStore } from "../store/authStore"; // Sesuaikan path ini dengan lokasi file Zustand Anda
+import { useAuthStore } from "../store/authStore";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 10000,
-  withCredentials: true, // ✅ WAJIB untuk HttpOnly Cookie
+  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // Jika 401 Unauthorized dan belum di-retry
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // Panggil endpoint refresh. Browser akan otomatis mengirim cookie refresh_token
         await axios.post(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/refresh`,
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
-        
-        // Jika sukses, backend akan set cookie access_token baru. 
         return api(originalRequest);
       } catch (refreshError) {
-        // Jika refresh token gagal/expired, bersihkan Zustand dan logout
         if (typeof window !== "undefined") {
-          useAuthStore.getState().clearAuth(); // ✅ Bersihkan state Zustand & localStorage
+          useAuthStore.getState().clearAuth();
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
           window.location.href = "/";
         }
-        return Promise.reject(refreshError);
+        throw refreshError;
       }
     }
-    return Promise.reject(error);
-  }
+    throw error;
+  },
 );
 
-export function getErrorMessage(err: unknown, fallback = "Terjadi kesalahan. Coba lagi."): string {
+export function getErrorMessage(
+  err: unknown,
+  fallback = "Terjadi kesalahan. Coba lagi.",
+): string {
   if (axios.isAxiosError(err)) {
     return err.response?.data?.message ?? fallback;
   }
