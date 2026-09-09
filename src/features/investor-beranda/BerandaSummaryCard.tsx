@@ -11,7 +11,7 @@ interface BerandaSummaryCardProps {
 export function BerandaSummaryCard({
   totalActiveInvestment,
   activeProjects,
-}: BerandaSummaryCardProps) {
+}: Readonly<BerandaSummaryCardProps>) {
   return (
     <Card className="relative overflow-hidden bg-gradient-brand p-5 text-brand-foreground">
       <div className="relative z-10">

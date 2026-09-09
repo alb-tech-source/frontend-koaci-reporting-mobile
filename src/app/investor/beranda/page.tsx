@@ -4,18 +4,16 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 
-// Komponen Shell
 import { InvestorShell } from "@/components/layout/InvestorShell";
-
-// Komponen UI Beranda
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { ClientOnly } from "@/shared/components/ClientOnly";
+
 import { ActivityList } from "@/features/investor-beranda/ActivityList";
 import { BerandaHeader } from "@/features/investor-beranda/BerandaHeader";
 import { BerandaSummaryCard } from "@/features/investor-beranda/BerandaSummaryCard";
 import { ShortcutGrid } from "@/features/investor-beranda/ShortcutGrid";
 import { ProjectCard } from "@/features/investor-portofolio/ProjectCard";
 
-// API / Dummy Data
 import {
   fetchBerandaSummary,
   fetchLatestActivities,
@@ -23,6 +21,14 @@ import {
 } from "@/features/investor-beranda/dummy-data";
 
 export default function BerandaPage() {
+  return (
+    <ClientOnly fallback={<InvestorShell><BerandaSkeleton /></InvestorShell>}>
+      <BerandaContent />
+    </ClientOnly>
+  );
+}
+
+function BerandaContent() {
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ["investor", "beranda", "summary"],
     queryFn: fetchBerandaSummary,
@@ -44,14 +50,9 @@ export default function BerandaPage() {
     <InvestorShell
       header={
         summary ? (
-          <BerandaHeader
-            investorName={summary.investorName}
-            unreadNotifications={summary.unreadNotifications}
-          />
+          <BerandaHeader investorName={summary.investorName} unreadNotifications={summary.unreadNotifications} />
         ) : (
-          <div className="px-4 py-3">
-            <Skeleton className="h-8 w-48" />
-          </div>
+          <div className="px-4 py-3"><Skeleton className="h-8 w-48" /></div>
         )
       }
     >
@@ -60,10 +61,7 @@ export default function BerandaPage() {
       ) : (
         <div className="space-y-6">
           {summary && (
-            <BerandaSummaryCard
-              totalActiveInvestment={summary.totalActiveInvestment}
-              activeProjects={summary.activeProjects}
-            />
+            <BerandaSummaryCard totalActiveInvestment={summary.totalActiveInvestment} activeProjects={summary.activeProjects} />
           )}
 
           <ShortcutGrid />
@@ -71,15 +69,9 @@ export default function BerandaPage() {
           {projects && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-foreground">
-                  Proyek Terbaru
-                </h2>
-                <Link
-                  href="/investor/portofolio"
-                  className="inline-flex items-center gap-0.5 text-xs font-medium text-brand hover:underline"
-                >
-                  Lihat Semua
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                <h2 className="text-base font-semibold text-foreground">Proyek Terbaru</h2>
+                <Link href="/investor/portofolio" className="inline-flex items-center gap-0.5 text-xs font-medium text-brand hover:underline">
+                  Lihat Semua <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               </div>
               <div className="space-y-3">
@@ -92,9 +84,7 @@ export default function BerandaPage() {
 
           {activities && (
             <section className="space-y-3">
-              <h2 className="text-base font-semibold text-foreground">
-                Aktivitas Terbaru
-              </h2>
+              <h2 className="text-base font-semibold text-foreground">Aktivitas Terbaru</h2>
               <ActivityList activities={activities} />
             </section>
           )}
@@ -106,7 +96,7 @@ export default function BerandaPage() {
 
 function BerandaSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 pt-4">
       <Skeleton className="h-32 w-full rounded-2xl" />
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (

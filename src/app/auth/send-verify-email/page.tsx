@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { verifyEmailToken } from "@/features/auth/api";
+import api from "@/shared/lib/axios";
+import { useAuthStore } from "@/shared/store/authStore";
 
 type State = "loading" | "success" | "error";
 
@@ -12,6 +14,7 @@ function VerifyEmailContent() {
   const router = useRouter();
   const [state, setState] = useState<State>("loading");
   const [message, setMessage] = useState("");
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -22,22 +25,30 @@ function VerifyEmailContent() {
     }
 
     verifyEmailToken(token)
-      .then(() => {
+      .then(async () => {
+        try {
+          const { data } = await api.get("/auth/me");
+          if (data?.data) {
+            setAuth(data.data);
+            document.cookie = `user_role=${data.data.role || data.data.user?.role}; path=/; max-age=86400; SameSite=Lax`;
+          }
+        } catch (syncError) {
+          console.error("Gagal sinkronisasi profil terbaru", syncError);
+        }
+
         setState("success");
-        setMessage(
-          "Email berhasil diverifikasi! Perubahan data Anda telah diterapkan.",
-        );
-        // Redirect ke akun setelah 3 detik
+        setMessage("Email berhasil diverifikasi! Perubahan data Anda telah diterapkan.");
+        
         setTimeout(() => router.push("/investor/akun"), 3000);
       })
       .catch((err) => {
         setState("error");
         setMessage(
           err?.response?.data?.message ||
-            "Token tidak valid atau sudah kadaluarsa. Silakan minta verifikasi ulang.",
+            "Token tidak valid atau sudah kadaluarsa. Silakan minta verifikasi ulang."
         );
       });
-  }, [searchParams, router]);
+  }, [searchParams, router, setAuth]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
@@ -46,29 +57,21 @@ function VerifyEmailContent() {
           <>
             <Loader2 className="mx-auto h-12 w-12 animate-spin text-brand" />
             <h2 className="mt-4 text-lg font-semibold">Memverifikasi...</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Mohon tunggu sebentar.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Mohon tunggu sebentar.</p>
           </>
         )}
         {state === "success" && (
           <>
             <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
-            <h2 className="mt-4 text-lg font-semibold text-foreground">
-              Berhasil!
-            </h2>
+            <h2 className="mt-4 text-lg font-semibold text-foreground">Berhasil!</h2>
             <p className="mt-1 text-sm text-muted-foreground">{message}</p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Mengalihkan ke halaman akun...
-            </p>
+            <p className="mt-3 text-xs text-muted-foreground">Mengalihkan ke halaman akun...</p>
           </>
         )}
         {state === "error" && (
           <>
             <XCircle className="mx-auto h-12 w-12 text-danger" />
-            <h2 className="mt-4 text-lg font-semibold text-foreground">
-              Verifikasi Gagal
-            </h2>
+            <h2 className="mt-4 text-lg font-semibold text-foreground">Verifikasi Gagal</h2>
             <p className="mt-1 text-sm text-muted-foreground">{message}</p>
             <button
               type="button"
@@ -86,7 +89,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-muted/40" />}>
       <VerifyEmailContent />
     </Suspense>
   );

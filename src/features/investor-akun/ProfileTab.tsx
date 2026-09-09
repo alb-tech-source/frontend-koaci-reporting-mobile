@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Loader2, Pencil } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query"; // ✅ Tambahkan ini
+import { toast } from "sonner"; // ✅ Tambahkan ini
 
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
@@ -25,15 +27,17 @@ import {
   type InvestorProfile,
 } from "./types";
 import { INDONESIAN_BANKS } from "./utils";
+import { saveInvestorProfile } from "./api"; // ✅ Import fungsi save yang baru
 
 interface ProfileTabProps {
   profile: InvestorProfile;
-  onRequestVerification: (draft: InvestorProfile) => Promise<void>;
+  onRequestVerification: () => Promise<void>; // ✅ Perbaiki tipe ini
 }
 
 export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileTabProps>) {
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+  // Jika investorId kosong, otomatis paksa buka form edit karena harus diisi!
+  const [editing, setEditing] = useState(!profile.investorId);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [draft, setDraft] = useState(profile);
 
@@ -46,16 +50,22 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
     setEditing(true);
   };
 
+  // ✅ MUTASI UNTUK MENYIMPAN PROFIL
+  const saveMutation = useMutation({
+    mutationFn: (payload: InvestorProfile) => saveInvestorProfile(payload),
+    onSuccess: () => {
+      toast.success("Profil berhasil disimpan.");
+      queryClient.invalidateQueries({ queryKey: ["investor", "profile"] });
+      setEditing(false);
+    },
+    onError: () => {
+      toast.error("Gagal menyimpan profil.");
+    }
+  });
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setSaving(true);
-    try {
-      await onRequestVerification(draft);
-      setSentTo(profile.email);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate(draft);
   };
 
   return (
@@ -81,7 +91,6 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
 
         {editing ? (
           <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-            {/* --- Bagian Input Form yang Lain Tetap Sama --- */}
             
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -203,17 +212,20 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
             </div>
 
             <div className="flex gap-2 pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setEditing(false)}
-                disabled={saving}
-              >
-                Batal
-              </Button>
-              <Button type="submit" className="flex-1" disabled={saving}>
-                {saving ? (
+              {/* Sembunyikan tombol batal jika profil belum ada (wajib diisi perdana) */}
+              {profile.investorId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setEditing(false)}
+                  disabled={saveMutation.isPending}
+                >
+                  Batal
+                </Button>
+              )}
+              <Button type="submit" variant="primary" className="flex-1" disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? (
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />
                 ) : null}
                 Simpan Perubahan
