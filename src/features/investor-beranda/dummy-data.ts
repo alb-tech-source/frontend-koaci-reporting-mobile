@@ -1,6 +1,6 @@
 import type { InvestmentProject } from "@/features/investor-portofolio/types";
-
 import type { BerandaActivity, BerandaSummary } from "./types";
+import { useAuthStore } from "@/shared/store/authStore";
 
 export async function fetchBerandaSummary(): Promise<BerandaSummary> {
   await new Promise((r) => setTimeout(r, 250));

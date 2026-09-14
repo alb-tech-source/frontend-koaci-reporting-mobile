@@ -8,7 +8,11 @@ import { AuthDivider, GoogleAuthButton } from "./GoogleAuthButton";
 import { LoginForm, type LoginFormValues } from "./LoginForm";
 import { RegisterForm, type RegisterFormValues } from "./RegisterForm";
 
-import { login, registerWithEmail, fetchCurrentUser } from "@/features/auth/api";
+import {
+  login,
+  registerWithEmail,
+  fetchCurrentUser,
+} from "@/features/auth/api";
 import { useAuthStore } from "@/shared/store/authStore";
 
 type AuthTab = "login" | "register";
@@ -48,11 +52,11 @@ export function InvestorAuthCard() {
       }
 
       const profileResponse = await fetchCurrentUser();
-      
+
       if (profileResponse?.success && profileResponse.data) {
-        const activeRole = profileResponse.data.role || profileResponse.data.user?.role || "user";
-        
-        setAuth({ ...profileResponse.data, role: activeRole });
+        const activeRole = profileResponse?.data.user.role.role_name || "user";
+
+        setAuth({ ...profileResponse.data.user, role: activeRole });
 
         document.cookie = `user_role=${activeRole}; path=/; max-age=86400; SameSite=Lax`;
 
@@ -65,7 +69,7 @@ export function InvestorAuthCard() {
       if (err?.response?.status === 404 || err?.response?.status === 401) {
         setError("Email atau password salah.");
       } else {
-        setError("Terjadi kesalahan saat login. Silakan coba lagi.");
+        setError(err?.response?.data.message);
       }
     } finally {
       setLoading(false);

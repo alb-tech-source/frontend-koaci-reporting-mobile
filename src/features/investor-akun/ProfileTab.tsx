@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Loader2, Pencil } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query"; // ✅ Tambahkan ini
 import { toast } from "sonner"; // ✅ Tambahkan ini
+import { useAuthStore } from "@/shared/store/authStore";
 
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
@@ -53,7 +54,12 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
   // ✅ MUTASI UNTUK MENYIMPAN PROFIL
   const saveMutation = useMutation({
     mutationFn: (payload: InvestorProfile) => saveInvestorProfile(payload),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      // Sinkronkan nama ke session state agar UI langsung berubah tanpa relogin
+      useAuthStore.getState().updateUser({
+        firstname: variables.firstName,
+        lastname: variables.lastName,
+      });
       toast.success("Profil berhasil disimpan.");
       queryClient.invalidateQueries({ queryKey: ["investor", "profile"] });
       setEditing(false);

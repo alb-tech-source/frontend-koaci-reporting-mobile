@@ -5,19 +5,43 @@ import { AlertTriangle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 import { InvestorShell } from "@/components/layout/InvestorShell";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/shared/components/ui/alert-dialog";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/tabs";
 
 import { DocumentListPanel } from "@/features/investor-akun/DocumentListPanel";
-import { fetchInvestorDocuments, type InvestorDocument } from "@/features/investor-akun/documents";
+import {
+  deleteInvestorDocumentApi,
+  fetchInvestorDocuments,
+  uploadInvestorDocument,
+  type InvestorDocument,
+} from "@/features/investor-akun/documents";
 import { fetchInvestorProfile } from "@/features/investor-akun/api";
 import { sendVerifyEmail } from "@/features/auth/api";
 import { HeirTab } from "@/features/investor-akun/HeirTab";
 import { ProfileTab } from "@/features/investor-akun/ProfileTab";
-import { accountStatusLabel, accountStatusVariant } from "@/features/investor-akun/types";
+import {
+  accountStatusLabel,
+  accountStatusVariant,
+} from "@/features/investor-akun/types";
 
 import { logout } from "@/shared/lib/auth";
 import { useAuthStore } from "@/shared/store/authStore";
@@ -27,6 +51,36 @@ function initials(first?: string, last?: string) {
   const f = first ? first.charAt(0) : "U";
   const l = last ? last.charAt(0) : "";
   return `${f}${l}`.toUpperCase();
+}
+
+function LogoutButton() {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="destructive" className="w-full">
+          <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+          Keluar dari Akun
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Keluar dari akun?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Sesi Anda akan diakhiri dan Anda akan kembali ke halaman awal.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Batal</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90"
+            onClick={() => logout("/")}
+          >
+            Ya, Keluar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
 export default function InvestorAkunPage() {
@@ -56,8 +110,8 @@ function InvestorAkunContent() {
   const documents: InvestorDocument[] = documentsQuery.data ?? [];
 
   const displayEmail = authUser?.email || profile?.email || "";
-  const displayFirst = authUser?.firstName || profile?.firstName || "Investor";
-  const displayLast = authUser?.lastName || profile?.lastName || "";
+  const displayFirst = authUser?.firstname || profile?.firstName || "Investor";
+  const displayLast = authUser?.lastname || profile?.lastName || "";
 
   const requestVerification = async () => {
     if (!displayEmail) {
@@ -76,7 +130,9 @@ function InvestorAkunContent() {
 
   const header = (
     <div className="px-4 py-3">
-      <h1 className="text-base font-semibold tracking-tight text-foreground">Akun Saya</h1>
+      <h1 className="text-base font-semibold tracking-tight text-foreground">
+        Akun Saya
+      </h1>
     </div>
   );
 
@@ -100,10 +156,7 @@ function InvestorAkunContent() {
             </Button>
           </Card>
 
-          <Button variant="destructive" className="w-full" onClick={() => logout("/")}>
-            <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-            Keluar dari Akun
-          </Button>
+          <LogoutButton />
         </div>
       </InvestorShell>
     );
@@ -114,30 +167,45 @@ function InvestorAkunContent() {
       <div className="space-y-5">
         <section className="flex flex-col items-center pt-1 text-center">
           <span className="grid h-20 w-20 place-items-center rounded-3xl bg-brand/10 text-2xl font-bold text-brand">
-            {initials(displayFirst, displayLast)}
+            {initials(String(displayFirst), String(displayLast))}
           </span>
           <h2 className="mt-3 text-lg font-semibold tracking-tight text-foreground">
-            {displayFirst} {displayLast}
+            {String(displayFirst)} {String(displayLast)}
           </h2>
           <p className="text-sm text-muted-foreground">{displayEmail}</p>
-          <Badge variant={accountStatusVariant[profile.status]} className="mt-2">
+          <Badge
+            variant={accountStatusVariant[profile.status]}
+            className="mt-2"
+          >
             {accountStatusLabel[profile.status]}
           </Badge>
         </section>
 
         <Tabs defaultValue="profil">
           <TabsList className="w-full">
-            <TabsTrigger value="profil" className="flex-1">Profil</TabsTrigger>
-            <TabsTrigger value="ahli-waris" className="flex-1">Ahli Waris</TabsTrigger>
-            <TabsTrigger value="dokumen" className="flex-1">Dokumen</TabsTrigger>
+            <TabsTrigger value="profil" className="flex-1">
+              Profil
+            </TabsTrigger>
+            <TabsTrigger value="ahli-waris" className="flex-1">
+              Ahli Waris
+            </TabsTrigger>
+            <TabsTrigger value="dokumen" className="flex-1">
+              Dokumen
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profil" className="mt-3">
-            <ProfileTab profile={profile} onRequestVerification={requestVerification} />
+            <ProfileTab
+              profile={profile}
+              onRequestVerification={requestVerification}
+            />
           </TabsContent>
 
           <TabsContent value="ahli-waris" className="mt-3">
-            <HeirTab profile={profile} onRequestVerification={requestVerification} />
+            <HeirTab
+              profile={profile}
+              onRequestVerification={requestVerification}
+            />
           </TabsContent>
 
           <TabsContent value="dokumen" className="mt-3">
@@ -147,15 +215,31 @@ function InvestorAkunContent() {
                 <Skeleton className="h-16 w-full rounded-2xl" />
               </div>
             ) : (
-              <DocumentListPanel documents={documents} />
+              <DocumentListPanel
+                documents={documents}
+                onUpload={async (file) => {
+                  if (!profile.investorId) {
+                    throw new Error(
+                      "Lengkapi profil investor terlebih dahulu sebelum mengunggah dokumen.",
+                    );
+                  }
+                  await uploadInvestorDocument(profile.investorId, file);
+                  await queryClient.invalidateQueries({
+                    queryKey: ["investor", "documents", profile.investorId],
+                  });
+                }}
+                onDelete={async (doc) => {
+                  await deleteInvestorDocumentApi(doc.id);
+                  await queryClient.invalidateQueries({
+                    queryKey: ["investor", "documents", profile.investorId],
+                  });
+                }}
+              />
             )}
           </TabsContent>
         </Tabs>
 
-        <Button variant="destructive" className="w-full" onClick={() => logout("/")}>
-          <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-          Keluar dari Akun
-        </Button>
+        <LogoutButton />
       </div>
     </InvestorShell>
   );
@@ -163,11 +247,15 @@ function InvestorAkunContent() {
 
 function InvestorAkunSkeleton() {
   return (
-    <InvestorShell header={
-      <div className="px-4 py-3">
-        <h1 className="text-base font-semibold tracking-tight text-foreground">Akun Saya</h1>
-      </div>
-    }>
+    <InvestorShell
+      header={
+        <div className="px-4 py-3">
+          <h1 className="text-base font-semibold tracking-tight text-foreground">
+            Akun Saya
+          </h1>
+        </div>
+      }
+    >
       <div className="space-y-4">
         <div className="flex flex-col items-center gap-2">
           <Skeleton className="h-20 w-20 rounded-3xl" />

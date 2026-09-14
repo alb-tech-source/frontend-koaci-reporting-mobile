@@ -1,13 +1,29 @@
 import { useState } from "react";
 import { FileText, Download, Trash2, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import { getDocumentDownloadUrl, type InvestorDocument } from "./documents";
 import { AddDocumentDialog } from "./AddDocumentDialog";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/axios";
+
+// Prioritaskan pesan dari Error aplikasi (mis. helper upload), lalu pesan backend
+function errMsg(err: unknown, fallback: string): string {
+  return getErrorMessage(err, err instanceof Error && err.message ? err.message : fallback);
+}
 
 interface Props {
   documents: InvestorDocument[];
-  onDelete?: (doc: InvestorDocument) => void;
+  onDelete?: (doc: InvestorDocument) => Promise<void>;
   onUpload?: (file: File) => Promise<void>;
 }
 
@@ -19,6 +35,8 @@ export function DocumentListPanel({
   const [addOpen, setAddOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<InvestorDocument | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleUpload = async (file: File) => {
     if (!onUpload) {
@@ -26,15 +44,34 @@ export function DocumentListPanel({
       setAddOpen(false);
       return;
     }
+    // Batas maksimal backend: 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Ukuran file melebihi batas maksimal 100MB.");
+      return;
+    }
     setIsUploading(true);
     try {
       await onUpload(file);
       setAddOpen(false);
       toast.success("Dokumen berhasil diunggah.");
-    } catch {
-      toast.error("Gagal mengunggah dokumen.");
+    } catch (err) {
+      toast.error(errMsg(err, "Gagal mengunggah dokumen."));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || !pendingDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(pendingDelete);
+      setPendingDelete(null);
+      toast.success("Dokumen berhasil dihapus.");
+    } catch (err) {
+      toast.error(errMsg(err, "Gagal menghapus dokumen."));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -117,8 +154,10 @@ export function DocumentListPanel({
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={`Hapus ${doc.name}`}
                     className="text-danger"
-                    onClick={() => onDelete(doc)}
+                    disabled={isDeleting}
+                    onClick={() => setPendingDelete(doc)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -137,6 +176,44 @@ export function DocumentListPanel({
           isSubmitting={isUploading}
         />
       )}
+
+      {/* KONFIRMASI HAPUS DOKUMEN */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus dokumen ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dokumen “{pendingDelete?.name}” akan dihapus permanen dan tidak
+              dapat dipulihkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-danger text-white hover:bg-danger/90"
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDelete();
+              }}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

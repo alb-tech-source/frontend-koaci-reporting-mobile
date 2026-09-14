@@ -1,5 +1,6 @@
 // mobile/src/features/investor-akun/documents.ts (BARU)
 import api from "@/shared/lib/axios";
+import { uploadFile } from "@/shared/lib/upload";
 
 export interface InvestorDocument {
   id: string;
@@ -18,6 +19,17 @@ export async function fetchInvestorDocuments(investorId: string): Promise<Invest
     sizeBytes: Number(d.file_size_bytes),
     uploadedAt: d.uploaded_at,
   }));
+}
+
+// Alur direct-to-R2: presign → PUT ke storage → confirm (buat record DB)
+export async function uploadInvestorDocument(investorId: string, file: File) {
+  return uploadFile(
+    "/investor-documents/presign",
+    "/investor-documents",
+    { investor_id: investorId },
+    { investor_id: investorId, document_name: file.name },
+    file,
+  );
 }
 
 export async function getDocumentDownloadUrl(documentId: string): Promise<string> {

@@ -21,10 +21,11 @@ export function AddDocumentDialog({
     <div className="p-4 border border-border rounded-xl mt-4 space-y-3 bg-muted/20">
       <p className="text-sm font-semibold text-foreground">Unggah Dokumen Baru</p>
       
-      <Input 
-        type="file" 
+      <Input
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
         disabled={isSubmitting}
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)} 
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
       />
       
       <div className="flex items-center gap-2 pt-2">

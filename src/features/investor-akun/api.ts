@@ -3,10 +3,9 @@ import { useAuthStore } from "@/shared/store/authStore";
 import { InvestorProfile } from "./types";
 
 export async function fetchInvestorProfile(): Promise<InvestorProfile> {
-  const rawState = useAuthStore.getState().user;
-  // ✅ Tangani masalah nested object (user.user)
-  const userObj = rawState?.user || rawState;
-  const userId = userObj?.user_id || userObj?.id;
+  const user = useAuthStore.getState().user;
+
+  const userId = user?.user_id;
 
   if (!userId) {
     throw new Error("User ID tidak ditemukan");
@@ -19,9 +18,11 @@ export async function fetchInvestorProfile(): Promise<InvestorProfile> {
     return {
       investorId: raw.investor_id || raw.investorId,
       userId: raw.user_id || raw.userId,
-      firstName: raw.first_name || raw.firstName || "",
-      lastName: raw.last_name || raw.lastName || "",
-      email: raw.email || userObj?.email || "",
+      // Nama ada di tabel user; fallback ke data sesi jika endpoint investor
+      // tidak mengembalikannya
+      firstName: raw.first_name || raw.firstName || user?.firstname || "",
+      lastName: raw.last_name || raw.lastName || user?.lastname || "",
+      email: raw.email || user.email || "",
       phone: raw.phone || "",
       investorType: raw.investor_type || raw.investorType || "individual",
       gender: raw.gender || "men",
@@ -38,9 +39,9 @@ export async function fetchInvestorProfile(): Promise<InvestorProfile> {
       return {
         investorId: "", // Kosong, penanda bahwa ini harus di-POST nanti
         userId: userId,
-        firstName: userObj?.firstname || "",
-        lastName: userObj?.lastname || "",
-        email: userObj?.email || "",
+        firstName: user?.firstname || "",
+        lastName: user?.lastname || "",
+        email: user?.email || "",
         phone: "",
         investorType: "individual",
         gender: "men",
@@ -57,14 +58,20 @@ export async function fetchInvestorProfile(): Promise<InvestorProfile> {
 
 // ✅ FUNGSI BARU UNTUK SAVE/UPDATE PROFIL
 export async function saveInvestorProfile(payload: InvestorProfile) {
-  const rawState = useAuthStore.getState().user;
-  const userObj = rawState?.user || rawState;
-  const userId = userObj?.user_id || userObj?.id;
+  const user = useAuthStore.getState().user;
+  const userId = user?.user_id;
 
-  const apiPayload = {
+  if (!userId) throw new Error("User ID tidak ditemukan");
+
+  // first_name & last_name ada di tabel user, update via PUT /users/{user_id}
+  const userPayload = {
+    firstname: payload.firstName,
+    lastname: payload.lastName,
+  };
+
+  // Field lain milik tabel investor
+  const investorPayload = {
     user_id: userId,
-    first_name: payload.firstName,
-    last_name: payload.lastName,
     phone: payload.phone,
     investor_type: payload.investorType,
     gender: payload.gender,
@@ -74,21 +81,21 @@ export async function saveInvestorProfile(payload: InvestorProfile) {
     bank_name: payload.bankName,
   };
 
-  // Jika sudah punya ID, berarti Update (PUT). Jika kosong, Create (POST)
-  if (payload.investorId) {
-    const { data } = await api.put(`/investors/${payload.investorId}`, apiPayload);
-    return data;
-  } else {
-    const { data } = await api.post(`/investors`, apiPayload);
-    return data;
-  }
+  const [, investorResponse] = await Promise.all([
+    updateUserDetails(userPayload),
+    // Jika sudah punya ID, berarti Update (PUT). Jika kosong, Create (POST)
+    payload.investorId
+      ? api.put(`/investors/${payload.investorId}`, investorPayload)
+      : api.post(`/investors`, investorPayload),
+  ]);
+
+  return investorResponse.data;
 }
 
 // GET /api/users/{id}
 export async function fetchUserDetails() {
-  const rawState = useAuthStore.getState().user;
-  const userObj = rawState?.user || rawState;
-  const userId = userObj?.user_id || userObj?.id;
+  const user = useAuthStore.getState().user;
+  const userId = user?.user_id;
 
   if (!userId) throw new Error("User ID tidak ditemukan");
 
@@ -97,10 +104,12 @@ export async function fetchUserDetails() {
 }
 
 // PUT /api/users/{id}
-export async function updateUserDetails(payload: { firstname?: string; lastname?: string }) {
-  const rawState = useAuthStore.getState().user;
-  const userObj = rawState?.user || rawState;
-  const userId = userObj?.user_id || userObj?.id;
+export async function updateUserDetails(payload: {
+  firstname?: string;
+  lastname?: string;
+}) {
+  const user = useAuthStore.getState().user;
+  const userId = user?.user_id;
 
   if (!userId) throw new Error("User ID tidak ditemukan");
 
