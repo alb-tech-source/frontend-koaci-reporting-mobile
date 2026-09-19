@@ -29,9 +29,9 @@ export function BottomNav({ items = defaultInvestorNav }: Readonly<BottomNavProp
   return (
     <nav
       aria-label="Navigasi utama"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-x border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
-      <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const active =
             item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);

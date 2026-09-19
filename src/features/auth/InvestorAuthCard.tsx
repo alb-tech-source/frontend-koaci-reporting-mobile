@@ -55,6 +55,7 @@ export function InvestorAuthCard() {
 
       if (profileResponse?.success && profileResponse.data) {
         const activeRole = profileResponse?.data.user.role.role_name || "user";
+        console.log("Active Role:", activeRole);
 
         setAuth({ ...profileResponse.data.user, role: activeRole });
 

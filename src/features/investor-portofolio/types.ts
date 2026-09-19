@@ -1,18 +1,32 @@
-export type ProjectStatus = "active" | "pending" | "completed" | "cancelled";
+export type ProjectStatus = "open" | "closed" | "target_achieved" | "cancelled";
 
-export interface InvestorPortfolioSummary {
-  investorName: string;
-  totalActiveInvestment: number;
-  activeProjects: number;
+export interface MyInvestment {
+  investmentId: string;
+  projectId: string;
+  projectKey: string;
+  companyName: string;
+  fundingRequired: number;
+  projectStatus: ProjectStatus;
+  amount: number;
+  totalPackage: number;
+  paymentMethod: "cash" | "transfer";
+  receiptNumber: string;
+  createdAt: string;
+  latestProgress?: number;
+  hasReceipt: boolean;
 }
 
-export interface InvestmentProject {
-  id: string;
-  name: string;
-  investmentAmount: number;
-  status: ProjectStatus;
-  progress: number; // 0 - 100
-  returnRate?: number; // optional, percentage
-  tenorMonths?: number;
-  imageUrl?: string;
+export interface MyPortfolioSummary {
+  totalInvested: number;
+  activeProjects: number;
+  investorName: string;
+}
+
+export interface MyReceipt {
+  receiptId: string;
+  investmentId: string;
+  receiptName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
 }

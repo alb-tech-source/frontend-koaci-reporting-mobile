@@ -1,67 +1,94 @@
-import type { ProjectStatus } from "./types";
+function groupID(value: number, fractionDigits = 0): string {
+  const fixed = Math.abs(value).toFixed(fractionDigits);
+  const [intPart, fracPart] = fixed.split(".");
+
+  let grouped = intPart;
+  if (intPart.length > 3) {
+    const chunks: string[] = [];
+    for (let i = intPart.length; i > 0; i -= 3) {
+      const start = Math.max(0, i - 3);
+      chunks.push(intPart.slice(start, i));
+    }
+    grouped = chunks.toReversed().join(".");
+  }
+
+  const sign = value < 0 ? "-" : "";
+  return sign + (fracPart ? `${grouped},${fracPart}` : grouped);
+}
 
 export function formatIDR(value: number, options?: { compact?: boolean }): string {
   const { compact = false } = options ?? {};
 
-  if (compact && value >= 1_000_000_000) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 1,
-    })
-      .format(value / 1_000_000_000)
-      .replace("IDR", "Rp")
-      .trim() + " M";
+  if (compact && Math.abs(value) >= 1_000_000_000) {
+    return `Rp ${groupID(value / 1_000_000_000, 1)} M`;
   }
 
-  if (compact && value >= 1_000_000) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 1,
-    })
-      .format(value / 1_000_000)
-      .replace("IDR", "Rp")
-      .trim() + " Jt";
+  if (compact && Math.abs(value) >= 1_000_000) {
+    return `Rp ${groupID(value / 1_000_000, 1)} Jt`;
   }
 
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })
-    .format(value)
-    .replace("IDR", "Rp")
-    .trim();
+  return `Rp ${groupID(value)}`;
 }
 
-export function statusLabel(status: ProjectStatus): string {
-  switch (status) {
-    case "active":
-      return "Aktif";
-    case "pending":
-      return "Menunggu";
-    case "completed":
-      return "Selesai";
-    case "cancelled":
-      return "Dibatalkan";
-    default:
-      return status;
-  }
+export function statusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    open: "Berjalan",
+    target_achieved: "Terpenuhi",
+    closed: "Selesai",
+    cancelled: "Dibatalkan",
+    // backward compat
+    active: "Aktif",
+    pending: "Menunggu",
+    completed: "Selesai",
+  };
+  return labels[status] ?? status;
 }
 
-export function statusBadgeVariant(status: ProjectStatus): "active" | "pending" | "cancelled" | "info" {
-  switch (status) {
-    case "active":
-      return "active";
-    case "pending":
-      return "pending";
-    case "completed":
-      return "info";
-    case "cancelled":
-      return "cancelled";
-    default:
-      return "info";
-  }
+export type StatusBadgeVariant =
+  | "active"
+  | "pending"
+  | "cancelled"
+  | "info"
+  | "secondary";
+
+export function statusBadgeVariant(status: string): StatusBadgeVariant {
+  const variants: Record<string, StatusBadgeVariant> = {
+    open: "active",
+    target_achieved: "info",
+    closed: "secondary",
+    cancelled: "cancelled",
+    active: "active",
+    pending: "pending",
+    completed: "secondary",
+  };
+  return variants[status] ?? "info";
+}
+
+const MONTHS_ID = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+];
+
+export function formatDateID(iso?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getUTCDate()} ${MONTHS_ID[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+export function formatFileSize(bytes: number): string {
+  if (!bytes) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

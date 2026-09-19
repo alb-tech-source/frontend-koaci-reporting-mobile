@@ -15,10 +15,10 @@ interface Shortcut {
 }
 
 const shortcuts: Shortcut[] = [
-  { to: "/portofolio", label: "Lihat Portofolio", icon: Wallet, tone: "brand" },
-  { to: "/laporan", label: "Laporan Terbaru", icon: FileText, tone: "teal" },
-  { to: "/riwayat", label: "Riwayat Investasi", icon: History, tone: "success" },
-  { to: "/bantuan", label: "Hubungi CS", icon: Headphones, tone: "warning" },
+  { to: "/investor/portofolio", label: "Lihat Portofolio", icon: Wallet, tone: "brand" },
+  { to: "/investor/laporan", label: "Laporan Terbaru", icon: FileText, tone: "teal" },
+  { to: "/investor/riwayat", label: "Riwayat Investasi", icon: History, tone: "success" },
+  { to: "/investor/bantuan", label: "Hubungi CS", icon: Headphones, tone: "warning" },
 ];
 
 const toneClass: Record<Shortcut["tone"], string> = {

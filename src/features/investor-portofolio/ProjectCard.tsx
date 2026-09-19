@@ -1,31 +1,36 @@
-import { ChevronRight, TrendingUp } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Card } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
 import { cn } from "@/shared/lib/utils";
-import type { InvestmentProject } from "./types";
+import type { MyInvestment } from "./types";
 import { formatIDR, statusBadgeVariant, statusLabel } from "./utils";
 
 interface ProjectCardProps {
-  project: InvestmentProject;
+  investment: MyInvestment;
   onClick?: () => void;
 }
 
-export function ProjectCard({ project, onClick }: Readonly<ProjectCardProps>) {
+export function ProjectCard({
+  investment,
+  onClick,
+}: Readonly<ProjectCardProps>) {
+  const progress = investment.latestProgress ?? 0;
+
   return (
     <Card
       interactive={Boolean(onClick)}
       onClick={onClick}
-      className="flex flex-col gap-3 p-4"
+      className="flex flex-col gap-3 p-4 transition-transform active:scale-[0.98]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-snug text-foreground">
-            {project.name}
+            {investment.projectKey}
           </p>
           <p className="mt-1 text-lg font-bold text-foreground">
-            {formatIDR(project.investmentAmount)}
+            {formatIDR(investment.amount)}
           </p>
         </div>
         <ChevronRight
@@ -35,32 +40,26 @@ export function ProjectCard({ project, onClick }: Readonly<ProjectCardProps>) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Badge variant={statusBadgeVariant(project.status)}>
-          {statusLabel(project.status)}
+        <Badge variant={statusBadgeVariant(investment.projectStatus)}>
+          {statusLabel(investment.projectStatus)}
         </Badge>
-        {project.returnRate ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
-            <TrendingUp className="h-3 w-3" aria-hidden="true" />
-            {project.returnRate}% / thn
-          </span>
-        ) : null}
       </div>
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Progress Proyek</span>
-          <span className="font-semibold text-foreground">
-            {project.progress}%
-          </span>
+          <span className="text-muted-foreground">Persentase Dana Terkumpul</span>
+          <span className="font-semibold text-foreground">{progress}%</span>
         </div>
         <Progress
-          value={project.progress}
+          value={progress}
           className={cn(
             "h-2",
-            project.status === "pending" && "bg-warning/20",
-            project.status === "cancelled" && "bg-danger/20",
+            String(investment.projectStatus).toLowerCase() === "pending" &&
+              "bg-warning/20",
+            String(investment.projectStatus).toLowerCase() === "cancelled" &&
+              "bg-danger/20",
           )}
-          aria-label={`Progress ${project.name}: ${project.progress}%`}
+          aria-label={`Persentase Dana Terkumpul ${investment.projectKey}: ${progress}%`}
         />
       </div>
     </Card>
