@@ -1,39 +1,10 @@
-import type { InvestmentProject } from "@/features/investor-portofolio/types";
-import type { BerandaActivity, BerandaSummary } from "./types";
-import { useAuthStore } from "@/shared/store/authStore";
+import type { MyInvestment } from "@/features/investor-portofolio/types";
+import type { BerandaActivity } from "./types";
 
-export async function fetchBerandaSummary(): Promise<BerandaSummary> {
-  await new Promise((r) => setTimeout(r, 250));
-  return {
-    investorName: "Ahmad Fauzi",
-    totalActiveInvestment: 245_000_000,
-    activeProjects: 3,
-    unreadNotifications: 2,
-  };
-}
 
-export async function fetchLatestProjects(): Promise<InvestmentProject[]> {
+export async function fetchLatestProjects(): Promise<MyInvestment[]> {
   await new Promise((r) => setTimeout(r, 300));
-  return [
-    {
-      id: "proj-001",
-      name: "Pembiayaan Rumah Syariah Cluster Al-Falah",
-      investmentAmount: 120_000_000,
-      status: "active",
-      progress: 72,
-      returnRate: 8.5,
-      tenorMonths: 24,
-    },
-    {
-      id: "proj-002",
-      name: "Sukuk Ritel SR-018 Seri Oranye",
-      investmentAmount: 75_000_000,
-      status: "active",
-      progress: 45,
-      returnRate: 6.75,
-      tenorMonths: 36,
-    },
-  ];
+  return [];
 }
 
 export async function fetchLatestActivities(): Promise<BerandaActivity[]> {
