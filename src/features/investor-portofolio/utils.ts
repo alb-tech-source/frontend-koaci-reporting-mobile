@@ -32,16 +32,16 @@ export function formatIDR(value: number, options?: { compact?: boolean }): strin
 
 export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
-    open: "Berjalan",
-    target_achieved: "Terpenuhi",
-    closed: "Selesai",
+    open: "Terbuka",
+    target_achieved: "Target Tercapai",
+    closed: "Ditutup",
     cancelled: "Dibatalkan",
     // backward compat
     active: "Aktif",
     pending: "Menunggu",
     completed: "Selesai",
   };
-  return labels[status] ?? status;
+  return labels[String(status).toLowerCase()] ?? status;
 }
 
 export type StatusBadgeVariant =
@@ -53,7 +53,7 @@ export type StatusBadgeVariant =
 
 export function statusBadgeVariant(status: string): StatusBadgeVariant {
   const variants: Record<string, StatusBadgeVariant> = {
-    open: "active",
+    open: "active", 
     target_achieved: "info",
     closed: "secondary",
     cancelled: "cancelled",
@@ -61,7 +61,7 @@ export function statusBadgeVariant(status: string): StatusBadgeVariant {
     pending: "pending",
     completed: "secondary",
   };
-  return variants[status] ?? "info";
+  return variants[String(status).toLowerCase()] ?? "info";
 }
 
 const MONTHS_ID = [

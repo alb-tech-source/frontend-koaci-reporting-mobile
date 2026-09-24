@@ -46,8 +46,24 @@ function InvestmentDetailContent() {
     setIsDownloading(true);
     try {
       const url = await getReceiptDownloadUrl(myReceipt.receiptId);
-      if (!url) throw new Error("URL tidak tersedia");
-      window.open(url, "_blank", "noopener,noreferrer");
+      if (!url) throw new Error("URL unduhan tidak valid");
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("CORS terblokir");
+
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = myReceipt.receiptName || "kwitansi_investasi";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(blobUrl);
+      } catch {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
     } catch {
       toast.error("Gagal mengunduh kwitansi.");
     } finally {
