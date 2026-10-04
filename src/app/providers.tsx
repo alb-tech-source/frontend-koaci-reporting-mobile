@@ -1,15 +1,19 @@
 "use client";
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { watchSession } from "@/features/auth/session";
 import { Toaster } from "@/shared/components/ui/sonner";
-import { createQueryClient } from "@/shared/lib/queryClient";
+import { bindSessionToQueryCache, createQueryClient } from "@/shared/lib/queryClient";
 
 export function Providers({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const [queryClient] = useState(createQueryClient);
+
+  useEffect(() => bindSessionToQueryCache(queryClient), [queryClient]);
+  useEffect(() => watchSession(), []);
 
   return (
     <QueryClientProvider client={queryClient}>
