@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Koaci Investor (Frontend)
 
-## Getting Started
+Aplikasi web mobile-first untuk investor Koaci: memantau portofolio, laporan proyek, kwitansi, dan data akun. Backend dan aplikasi admin ada di folder saudara `../Backend` dan `../Frontend-Admin`.
 
-First, run the development server:
+> Project ini memakai Next.js 16, yang punya perubahan besar dibanding versi sebelumnya. Baca panduan di `node_modules/next/dist/docs/` sebelum menulis kode (lihat `AGENTS.md`).
+
+## Menjalankan
+
+Prasyarat: Node.js 20+ dan backend yang berjalan.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # lalu sesuaikan URL backend
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Perintah | Fungsi |
+|---|---|
+| `npm run dev` | Server pengembangan di port 3000 |
+| `npm run build` | Build produksi |
+| `npm run start` | Menjalankan hasil build |
+| `npm run lint` | ESLint |
+| `npm test` | Unit test (Vitest) |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variabel lingkungan
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Nama | Isi |
+|---|---|
+| `NEXT_PUBLIC_API_BASE_URL` | URL dasar API backend, termasuk prefix `/api` |
 
-## Learn More
+## Struktur
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/          Route (App Router): /, /auth/*, /investor/*, /user/*
+  proxy.ts      Pengarah route berdasarkan role
+  features/     Kode per fitur: API, types, komponen
+  components/   Layout (InvestorShell, BottomNav)
+  shared/       Komponen UI, lib, hooks, dan store lintas fitur
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Autentikasi
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Backend menyimpan token di cookie httpOnly. Frontend tidak pernah membaca token.
+- `establishSession()` di `src/features/auth/session.ts` adalah satu-satunya tempat sesi client dibentuk dari `GET /auth/me`. Login email, callback Google, dan verifikasi email semuanya memakainya.
+- Cookie `user_role` hanya dipakai `src/proxy.ts` untuk mengarahkan route. Ini bukan pengaman data: otorisasi ditentukan backend.
+- Interceptor di `src/shared/lib/axios.ts` me-refresh token saat 401, kecuali untuk endpoint auth seperti login.
 
-## Deploy on Vercel
+Aplikasi ini hanya melayani role `investor` dan `user`. Role lain ditolak saat login.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Konvensi
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Format commit ada di `.gitmessage`.
+- Mapper respons API (`mapInvestment`, `mapReporting`, dan sejenisnya) wajib punya test.
+- Format tanggal: `formatDateID` untuk timestamp, `formatCalendarDateID` untuk tanggal tanpa jam seperti `report_date`.

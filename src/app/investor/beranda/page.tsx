@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
-import { useMemo } from "react";
+import { AlertTriangle, ChevronRight } from "lucide-react";
 
 import { InvestorShell } from "@/components/layout/InvestorShell";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { ClientOnly } from "@/shared/components/ClientOnly";
 import { useAuthStore } from "@/shared/store/authStore";
 
-import { ActivityList } from "@/features/investor-beranda/ActivityList";
+import { fetchInvestmentSummary } from "@/features/investor-beranda/api";
 import { BerandaHeader } from "@/features/investor-beranda/BerandaHeader";
 import { BerandaSummaryCard } from "@/features/investor-beranda/BerandaSummaryCard";
 import { ShortcutGrid } from "@/features/investor-beranda/ShortcutGrid";
 import { ProjectCard } from "@/features/investor-portofolio/ProjectCard";
 
-import { fetchMyInvestments, computePortfolioSummary } from "@/features/investor-portofolio/api";
-import { fetchLatestActivities } from "@/features/investor-beranda/api";
+import { fetchMyInvestments } from "@/features/investor-portofolio/api";
+
+const LATEST_INVESTMENT_COUNT = 2;
 
 export default function BerandaPage() {
   return (
@@ -35,66 +37,74 @@ export default function BerandaPage() {
 
 function BerandaContent() {
   const user = useAuthStore((s) => s.user);
+  const investorName =
+    `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim() || "Investor";
 
-  const { data: investments, isLoading: loadingInvestments } = useQuery({
+  const summaryQuery = useQuery({
+    queryKey: ["investor", "investment-summary"],
+    queryFn: fetchInvestmentSummary,
+  });
+
+  // Backend mengurutkan dari yang terbaru; daftar ini berbagi cache dengan halaman riwayat
+  const investmentsQuery = useQuery({
     queryKey: ["investor", "my-investments"],
     queryFn: fetchMyInvestments,
   });
+  const latestInvestments =
+    investmentsQuery.data?.slice(0, LATEST_INVESTMENT_COUNT) ?? [];
 
-  const { data: activities, isLoading: loadingActivities } = useQuery({
-    queryKey: ["investor", "beranda", "activities"],
-    queryFn: fetchLatestActivities,
-  });
-
-  const summary = useMemo(() => {
-    if (!investments) return undefined;
-    const investorName = `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim() || "Investor";
-    const baseSummary = computePortfolioSummary(investments, investorName);
-    return {
-      ...baseSummary,
-      unreadNotifications: 0,
-    };
-  }, [investments, user]);
-
-  const isLoading = loadingInvestments || loadingActivities;
-
-  const header = summary ? (
-    <BerandaHeader
-      investorName={summary.investorName}
-      unreadNotifications={summary.unreadNotifications}
-    />
-  ) : (
-    <div className="px-4 py-3">
-      <Skeleton className="h-8 w-48" />
-    </div>
-  );
-
-  let content;
-
-  if (isLoading) {
-    content = <BerandaSkeleton />;
+  let summaryContent;
+  if (summaryQuery.isLoading) {
+    summaryContent = <Skeleton className="h-32 w-full rounded-2xl" />;
+  } else if (summaryQuery.isError || !summaryQuery.data) {
+    summaryContent = (
+      <Card className="flex flex-col items-center gap-3 p-6 text-center">
+        <div className="grid h-12 w-12 place-items-center rounded-full bg-danger/10 text-danger">
+          <AlertTriangle className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Gagal memuat ringkasan investasi.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void summaryQuery.refetch()}
+        >
+          Coba Lagi
+        </Button>
+      </Card>
+    );
   } else {
-    const latestInvestments = investments?.slice(0, 2) ?? [];
+    summaryContent = (
+      <BerandaSummaryCard
+        totalActiveInvestment={summaryQuery.data.totalActiveInvestment}
+        activeProjects={summaryQuery.data.activeProjects}
+      />
+    );
+  }
 
-    content = (
+  return (
+    <InvestorShell header={<BerandaHeader investorName={investorName} />}>
       <div className="space-y-6">
-        {summary && (
-          <BerandaSummaryCard
-            totalActiveInvestment={summary.totalInvested}
-            activeProjects={summary.activeProjects}
-          />
-        )}
+        {summaryContent}
 
         <ShortcutGrid />
+
+        {investmentsQuery.isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-32 rounded-md" />
+            <Skeleton className="h-36 w-full rounded-2xl" />
+          </div>
+        ) : null}
 
         {latestInvestments.length > 0 && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">
-                Proyek Terbaru
+                Investasi Terbaru
               </h2>
               <Link
-                href="/investor/portofolio"
+                href="/investor/riwayat"
                 className="inline-flex items-center gap-0.5 text-xs font-medium text-brand hover:underline"
               >
                 Lihat Semua <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -102,25 +112,14 @@ function BerandaContent() {
             </div>
             <div className="space-y-3">
               {latestInvestments.map((inv) => (
-                <ProjectCard key={inv.investmentId} investment={inv} /> 
+                <ProjectCard key={inv.investmentId} investment={inv} />
               ))}
             </div>
           </section>
         )}
-
-        {activities && (
-          <section className="space-y-3">
-            <h2 className="text-base font-semibold text-foreground">
-              Aktivitas Terbaru
-            </h2>
-            <ActivityList activities={activities} />
-          </section>
-        )}
       </div>
-    );
-  }
-
-  return <InvestorShell header={header}>{content}</InvestorShell>;
+    </InvestorShell>
+  );
 }
 
 function BerandaSkeleton() {

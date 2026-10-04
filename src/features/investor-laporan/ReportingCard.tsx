@@ -1,9 +1,9 @@
-import { ChevronRight, Image as ImageIcon } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Card } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
-import { formatDateID } from "@/features/investor-portofolio/utils";
+import { formatCalendarDateID } from "@/shared/lib/format";
 import type { MyReporting } from "./types";
 
 interface ReportingCardProps {
@@ -24,7 +24,7 @@ export function ReportingCard({ reporting, onClick }: Readonly<ReportingCardProp
             {reporting.projectKey}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            Laporan {formatDateID(reporting.reportDate)}
+            Laporan {formatCalendarDateID(reporting.reportDate)}
           </p>
         </div>
         <ChevronRight

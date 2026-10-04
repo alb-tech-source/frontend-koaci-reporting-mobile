@@ -6,20 +6,16 @@ export interface MyInvestment {
   projectKey: string;
   companyName: string;
   fundingRequired: number;
+  fundingCollected: number | null; // total setoran semua investor di proyek
+  fundingProgress: number | null; // persen dana terkumpul, 0-100
+  projectProgress: number | null; // estimasi progres dari laporan terakhir
   projectStatus: ProjectStatus;
   amount: number;
   totalPackage: number;
   paymentMethod: "cash" | "transfer";
   receiptNumber: string;
   createdAt: string;
-  latestProgress?: number;
   hasReceipt: boolean;
-}
-
-export interface MyPortfolioSummary {
-  totalInvested: number;
-  activeProjects: number;
-  investorName: string;
 }
 
 export interface MyReceipt {

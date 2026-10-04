@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ChevronRight,
   FileText,
@@ -17,6 +17,7 @@ import { InvestorShell } from "@/components/layout/InvestorShell";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
+import { useHydrated } from "@/shared/hooks/use-hydrated";
 import { useAuthStore } from "@/shared/store/authStore";
 import { userNav } from "@/features/user-area/nav";
 import { logout } from "@/shared/lib/auth";
@@ -38,32 +39,22 @@ function getInitials(first: string, last: string) {
 export default function UserAkunPage() {
   const userState = useAuthStore((state) => state.user);
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // State untuk mengontrol tombol verifikasi
   const [isSending, setIsSending] = useState(false);
   const [verifySent, setVerifySent] = useState(false);
 
-  useEffect(() => setMounted(true), []);
-
-  type AccountUser = {
-    firstname?: string;
-    lastname?: string;
-    email?: string;
-    user?: AccountUser;
-  };
-
-  const actualUser = (userState?.user ?? userState) as AccountUser | undefined;
-  const firstName = actualUser?.firstname ?? "Pengguna";
-  const lastName = actualUser?.lastname ?? "";
-  const displayEmail = actualUser?.email ?? "Memuat...";
+  const firstName = userState?.firstname || "Pengguna";
+  const lastName = userState?.lastname ?? "";
+  const displayEmail = userState?.email || "Memuat...";
 
   const handleSendVerify = async () => {
     if (!displayEmail || displayEmail === "Memuat...") return;
     setIsSending(true);
     try {
-      await sendVerifyEmail(displayEmail);
+      await sendVerifyEmail();
       setVerifySent(true);
     } catch (error) {
       console.error("Gagal mengirim email verifikasi", error);

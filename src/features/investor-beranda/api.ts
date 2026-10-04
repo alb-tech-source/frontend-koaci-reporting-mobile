@@ -1,34 +1,34 @@
-// ✅ Import yang tidak terpakai (MyInvestment, useAuthStore, BerandaSummary) dihapus
-import type { BerandaActivity } from "./types";
+import api from "@/shared/lib/axios";
+import type { InvestmentSummary } from "./types";
 
-// ✅ fetchBerandaSummary & fetchLatestProjects dihapus karena 
-// logika dan datanya sudah di-handle langsung di beranda/page.tsx menggunakan API riil
+// Bentuk respons GET /project-investments/own/summary.
+// Nominal dikirim sebagai string desimal (mis. "150000000").
+export interface ApiInvestmentSummary {
+  total_active_investment?: string | number;
+  active_projects?: number;
+}
 
-export async function fetchLatestActivities(): Promise<BerandaActivity[]> {
-  await new Promise((r) => setTimeout(r, 200));
-  const now = Date.now();
-  
-  return [
-    {
-      id: "act-001",
-      type: "profit",
-      title: "Bagi Hasil Diterima",
-      description: "Rp 2.400.000 dari Cluster Al-Falah masuk ke saldo Anda.",
-      timestamp: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "act-002",
-      type: "progress",
-      title: "Update Progress Proyek",
-      description: "Sukuk Ritel SR-018 mencapai 45% dari target pendanaan.",
-      timestamp: new Date(now - 26 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "act-003",
-      type: "document",
-      title: "Dokumen Baru Tersedia",
-      description: "Laporan kinerja Q2 untuk Kedai Kopi Halal siap diunduh.",
-      timestamp: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
+/**
+ * Hanya mengubah bentuk untuk tampilan; perhitungannya dilakukan backend.
+ * Respons yang tidak lengkap ditolak agar beranda tidak menampilkan "Rp 0" palsu.
+ */
+export function mapInvestmentSummary(raw: ApiInvestmentSummary): InvestmentSummary {
+  const totalActiveInvestment = Number(raw.total_active_investment);
+  const activeProjects = Number(raw.active_projects);
+
+  if (
+    raw.total_active_investment == null ||
+    raw.active_projects == null ||
+    !Number.isFinite(totalActiveInvestment) ||
+    !Number.isFinite(activeProjects)
+  ) {
+    throw new Error("Respons ringkasan investasi tidak valid.");
+  }
+
+  return { totalActiveInvestment, activeProjects };
+}
+
+export async function fetchInvestmentSummary(): Promise<InvestmentSummary> {
+  const { data } = await api.get("/project-investments/own/summary");
+  return mapInvestmentSummary(data?.data ?? {});
 }

@@ -3,9 +3,10 @@ import { ChevronRight } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
+import { formatIDR } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import type { MyInvestment } from "./types";
-import { formatIDR, statusBadgeVariant, statusLabel } from "./utils";
+import { statusBadgeVariant, statusLabel } from "./utils";
 
 interface ProjectCardProps {
   investment: MyInvestment;
@@ -16,7 +17,7 @@ export function ProjectCard({
   investment,
   onClick,
 }: Readonly<ProjectCardProps>) {
-  const progress = investment.latestProgress ?? 0;
+  const progress = investment.fundingProgress;
 
   return (
     <Card
@@ -45,23 +46,25 @@ export function ProjectCard({
         </Badge>
       </div>
 
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Persentase Dana Terkumpul</span>
-          <span className="font-semibold text-foreground">{progress}%</span>
+      {progress !== null && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Persentase Dana Terkumpul</span>
+            <span className="font-semibold text-foreground">{progress}%</span>
+          </div>
+          <Progress
+            value={progress}
+            className={cn(
+              "h-2",
+              String(investment.projectStatus).toLowerCase() === "pending" &&
+                "bg-warning/20",
+              String(investment.projectStatus).toLowerCase() === "cancelled" &&
+                "bg-danger/20",
+            )}
+            aria-label={`Persentase Dana Terkumpul ${investment.projectKey}: ${progress}%`}
+          />
         </div>
-        <Progress
-          value={progress}
-          className={cn(
-            "h-2",
-            String(investment.projectStatus).toLowerCase() === "pending" &&
-              "bg-warning/20",
-            String(investment.projectStatus).toLowerCase() === "cancelled" &&
-              "bg-danger/20",
-          )}
-          aria-label={`Persentase Dana Terkumpul ${investment.projectKey}: ${progress}%`}
-        />
-      </div>
+      )}
     </Card>
   );
 }

@@ -19,7 +19,7 @@ export function ProjectList({ projects }: Readonly<ProjectListProps>) {
           key={investment.investmentId}
           investment={investment}
           onClick={() =>
-            router.push(`/investor/portofolio/${investment.investmentId}`)
+            router.push(`/investor/riwayat/${investment.investmentId}`)
           }
         />
       ))}

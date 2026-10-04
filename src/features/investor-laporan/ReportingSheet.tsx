@@ -5,10 +5,8 @@ import {
   Image as ImageIcon,
   Loader2,
   Video,
-  X,
 } from "lucide-react";
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
@@ -21,12 +19,14 @@ import {
 import { Progress } from "@/shared/components/ui/progress";
 import { Separator } from "@/shared/components/ui/separator";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { downloadFromUrl } from "@/shared/lib/download";
 import {
-  formatDateID,
+  formatCalendarDateID,
   formatFileSize,
   formatIDR,
-} from "@/features/investor-portofolio/utils";
+} from "@/shared/lib/format";
 import { fetchMyReportingMedia, getReportingMediaDownloadUrl } from "./api";
+import { MediaPreviewDialog } from "./MediaPreviewDialog";
 import type { MyReporting, MyReportingMedia } from "./types";
 
 interface ReportingSheetProps {
@@ -47,21 +47,7 @@ export function ReportingSheet({
   onClose,
 }: Readonly<ReportingSheetProps>) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  
-  // STATE BARU: Menyimpan status dan data untuk Modal Preview Layar Penuh
-  const [previewState, setPreviewState] = useState<{
-    isOpen: boolean;
-    isLoading: boolean;
-    url: string | null;
-    type: "photo" | "video" | "document" | null;
-    name: string | null;
-  }>({
-    isOpen: false,
-    isLoading: false,
-    url: null,
-    type: null,
-    name: null,
-  });
+  const [previewMedia, setPreviewMedia] = useState<MyReportingMedia | null>(null);
 
   const mediaQuery = useQuery({
     queryKey: ["investor", "reporting-media", reporting?.reportingId],
@@ -69,29 +55,13 @@ export function ReportingSheet({
     enabled: Boolean(reporting?.reportingId) && isOpen,
   });
 
-  // Fungsi khusus untuk Unduh (Tetap ada untuk tombol panah bawah)
   const handleDownloadMedia = async (mediaId: string, mediaName: string) => {
     setDownloadingId(mediaId);
     try {
       const url = await getReportingMediaDownloadUrl(mediaId);
       if (!url) throw new Error("URL unduhan tidak valid");
 
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("CORS terblokir");
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = mediaName || "media";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(blobUrl);
-      } catch {
-        window.open(url, "_blank", "noopener,noreferrer");
-      }
+      await downloadFromUrl(url, mediaName || "media");
     } catch {
       toast.error("Gagal mengunduh media.");
     } finally {
@@ -99,76 +69,13 @@ export function ReportingSheet({
     }
   };
 
-  // FUNGSI BARU: Khusus untuk Streaming / Preview (saat baris diklik)
-  const handlePreviewMedia = async (media: MyReportingMedia) => {
-    // Jika bentuknya dokumen (pdf/doc), bypass preview dan langsung unduh/buka
+  // Foto dan video dibuka di pratinjau; dokumen (pdf/doc) langsung diunduh
+  const handlePreviewMedia = (media: MyReportingMedia) => {
     if (media.mediaType === "document") {
       void handleDownloadMedia(media.mediaId, media.mediaName);
       return;
     }
-
-    // Buka UI loading layar penuh
-    setPreviewState({
-      isOpen: true,
-      isLoading: true,
-      url: null,
-      type: media.mediaType,
-      name: media.mediaName,
-    });
-
-    try {
-      const url = await getReportingMediaDownloadUrl(media.mediaId);
-      if (!url) throw new Error("URL tidak valid");
-      
-      // Setelah URL didapat dari backend, berikan ke tag <video> atau <img>
-      setPreviewState((prev) => ({ ...prev, isLoading: false, url }));
-    } catch (err) {
-      toast.error("Gagal memuat pratinjau media.");
-      setPreviewState((prev) => ({ ...prev, isOpen: false, isLoading: false }));
-    }
-  };
-
-  // Komponen Lightbox Modal (Menggunakan Portal agar melayang di atas segalanya)
-  const renderPreviewModal = () => {
-    if (!previewState.isOpen) return null;
-
-    return createPortal(
-      <div className="fixed inset-0 z-[100] mx-auto flex max-w-md flex-col bg-black">
-        {/* Header Preview */}
-        <div className="flex items-center justify-between p-4 text-white">
-          <p className="truncate text-sm font-medium pr-4">{previewState.name}</p>
-          <button 
-            onClick={() => setPreviewState((prev) => ({ ...prev, isOpen: false }))}
-            className="shrink-0 rounded-full bg-white/20 p-2 transition-transform hover:bg-white/30 active:scale-95"
-            aria-label="Tutup pratinjau"
-          >
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4">
-          {previewState.isLoading ? (
-            <Loader2 className="h-8 w-8 animate-spin text-white" aria-hidden="true" />
-          ) : previewState.type === "video" && previewState.url ? (
-            <video 
-              key={previewState.url}
-              src={previewState.url} 
-              controls 
-              autoPlay 
-              playsInline 
-              className="max-h-full max-w-full object-contain"
-            />
-          ) : previewState.type === "photo" && previewState.url ? (
-            <img 
-              src={previewState.url} 
-              alt={previewState.name ?? "Preview"} 
-              className="max-h-full max-w-full object-contain"
-            />
-          ) : null}
-        </div>
-      </div>,
-      document.body
-    );
+    setPreviewMedia(media);
   };
 
   return (
@@ -200,7 +107,7 @@ export function ReportingSheet({
                 <div className="grid grid-cols-2 gap-3">
                   <InfoBox
                     label="Tanggal Laporan"
-                    value={formatDateID(reporting.reportDate)}
+                    value={formatCalendarDateID(reporting.reportDate)}
                   />
                   <InfoBox
                     label="Dana Tersalurkan"
@@ -215,7 +122,7 @@ export function ReportingSheet({
                     mediaQuery={mediaQuery} 
                     downloadingId={downloadingId} 
                     handleDownloadMedia={handleDownloadMedia}
-                    handlePreviewMedia={handlePreviewMedia} // Melempar fungsi baru ke bawah
+                    handlePreviewMedia={handlePreviewMedia}
                   />
                 )}
               </div>
@@ -224,8 +131,12 @@ export function ReportingSheet({
         </DrawerContent>
       </Drawer>
 
-      {/* Eksekusi Portal di akhir file agar melayang di atas segalanya */}
-      {renderPreviewModal()}
+      <MediaPreviewDialog
+        media={previewMedia}
+        isDownloading={previewMedia !== null && downloadingId === previewMedia.mediaId}
+        onDownload={(media) => void handleDownloadMedia(media.mediaId, media.mediaName)}
+        onClose={() => setPreviewMedia(null)}
+      />
     </>
   );
 }

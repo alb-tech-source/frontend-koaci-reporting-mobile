@@ -1,18 +1,20 @@
-import { Briefcase, TrendingUp } from "lucide-react";
+import { Briefcase, TrendingUp, Wallet } from "lucide-react";
 
 import { Card } from "@/shared/components/ui/card";
-import { formatIDR } from "./utils";
+import { formatIDR } from "@/shared/lib/format";
 
 interface PortfolioSummaryCardProps {
   investorName: string;
-  totalActiveInvestment: number;
-  activeProjects: number;
+  totalPrincipal: number;
+  totalProfit: number;
+  settledProjects: number;
 }
 
 export function PortfolioSummaryCard({
   investorName,
-  totalActiveInvestment,
-  activeProjects,
+  totalPrincipal,
+  totalProfit,
+  settledProjects,
 }: Readonly<PortfolioSummaryCardProps>) {
   return (
     <Card className="relative overflow-hidden bg-gradient-brand p-5 text-brand-foreground">
@@ -27,24 +29,29 @@ export function PortfolioSummaryCard({
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-white/15 p-3 backdrop-blur-sm">
             <div className="flex items-center gap-1.5 text-xs text-brand-foreground/90">
-              <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
-              Total Investasi Aktif
+              <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+              Total Modal
             </div>
             <p className="mt-1 text-lg font-bold tracking-tight">
-              {formatIDR(totalActiveInvestment, { compact: true })}
+              {formatIDR(totalPrincipal, { compact: true })}
             </p>
           </div>
 
           <div className="rounded-xl bg-white/15 p-3 backdrop-blur-sm">
             <div className="flex items-center gap-1.5 text-xs text-brand-foreground/90">
-              <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
-              Jumlah Proyek
+              <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+              Total Bagi Hasil
             </div>
             <p className="mt-1 text-lg font-bold tracking-tight">
-              {activeProjects} Proyek
+              {formatIDR(totalProfit, { compact: true })}
             </p>
           </div>
         </div>
+
+        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-brand-foreground/90">
+          <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+          {settledProjects} proyek sudah settlement
+        </p>
       </div>
 
       {/* Decorative circles */}

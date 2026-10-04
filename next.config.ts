@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      // Detail investasi dulu berada di bawah /investor/portofolio
+      {
+        source: "/investor/portofolio/:investmentId",
+        destination: "/investor/riwayat/:investmentId",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

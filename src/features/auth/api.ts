@@ -1,11 +1,17 @@
 import api from "@/shared/lib/axios";
+import type { RawUser } from "@/shared/store/authStore";
 
-export async function login(payload: any) {
+interface CurrentUserResponse {
+  success?: boolean;
+  data?: { user?: RawUser };
+}
+
+export async function login(payload: { email: string; password: string }) {
   const { data } = await api.post("/auth/login", payload);
   return data;
 }
 
-export async function fetchCurrentUser() {
+export async function fetchCurrentUser(): Promise<CurrentUserResponse> {
   const { data } = await api.get("/auth/me");
   return data;
 }
@@ -30,13 +36,9 @@ export async function registerWithEmail(payload: {
   return data;
 }
 
-export async function loginWithGoogle(credential: string) {
-  const { data } = await api.post("/auth/google", { credential });
-  return data;
-}
-
-export async function sendVerifyEmail(email: string) {
-  const { data } = await api.post("/auth/send-verify-email", { email });
+// Backend selalu mengirim ke email user yang sedang login (tanpa body)
+export async function sendVerifyEmail() {
+  const { data } = await api.post("/auth/send-verify-email");
   return data;
 }
 

@@ -1,53 +1,26 @@
 "use client";
 
-import React, { Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/shared/store/authStore";
-import api from "@/shared/lib/axios";
+import { establishSession, homePathForRole } from "@/features/auth/session";
 
-const CallbackGoogleLogin = () => {
+// Backend sudah memasang cookie auth sebelum mengarahkan ke sini;
+// halaman ini hanya membentuk sesi client lalu meneruskan ke beranda.
+export default function CallbackPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
-    const fetchProfileAndRedirect = async () => {
-      try {
-        const { data } = await api.get("/auth/me"); 
-
-        if (data?.data) {
-
-          setAuth(data.data);
-
-          document.cookie = `user_role=${data.data.role}; path=/; max-age=86400`;
-
-          if (data.data.role === "investor") {
-            router.push("/investor/beranda");
-          } else {
-            router.push("/user/beranda");
-          }
-        } else {
-          throw new Error("Gagal mengambil profil.");
-        }
-      } catch (error) {
+    establishSession()
+      .then((role) => router.replace(homePathForRole(role)))
+      .catch((error) => {
         console.error("Callback OAuth gagal", error);
-        router.push("/");
-      }
-    };
-
-    fetchProfileAndRedirect();
-  }, [router, setAuth]);
+        router.replace("/");
+      });
+  }, [router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <p className="text-sm text-muted-foreground">Memproses login Google...</p>
     </div>
   );
-};
-
-const CallbackPage = () => (
-  <Suspense fallback={<div>Memuat...</div>}>
-    <CallbackGoogleLogin />
-  </Suspense>
-);
-
-export default CallbackPage;
+}

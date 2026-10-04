@@ -1,5 +1,5 @@
 import api from "@/shared/lib/axios";
-import type { MyReporting, MyReportingMedia } from "./types";
+import type { MyReporting, MyReportingMedia, MyReportingMediaStream } from "./types";
 
 interface ApiReporting {
   project_reporting_id?: string;
@@ -86,6 +86,25 @@ export async function fetchMyReportingMedia(reportingId: string): Promise<MyRepo
   });
   const items = data?.data?.items ?? data?.data ?? data ?? [];
   return items.map(mapMedia);
+}
+
+interface ApiMediaStream {
+  streamUrl?: string;
+  mimeType?: string | null;
+}
+
+export function mapMediaStream(raw: ApiMediaStream): MyReportingMediaStream {
+  if (!raw.streamUrl) throw new Error("URL streaming tidak valid.");
+  return { url: raw.streamUrl, mimeType: raw.mimeType ?? "" };
+}
+
+/**
+ * URL untuk memutar/menampilkan media langsung di browser (inline, berlaku 4 jam).
+ * Berbeda dari URL unduhan, yang selalu memicu penyimpanan file.
+ */
+export async function fetchReportingMediaStream(mediaId: string): Promise<MyReportingMediaStream> {
+  const { data } = await api.get(`/project-reporting-media/own/${mediaId}/stream`);
+  return mapMediaStream(data?.data ?? {});
 }
 
 export async function getReportingMediaDownloadUrl(mediaId: string): Promise<string> {

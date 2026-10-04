@@ -10,9 +10,17 @@ export interface InvestorDocument {
   uploadedAt: string;
 }
 
+interface ApiInvestorDocument {
+  document_id: string;
+  document_name: string;
+  mime_type: string;
+  file_size_bytes: string | number;
+  uploaded_at: string;
+}
+
 export async function fetchInvestorDocuments(investorId: string): Promise<InvestorDocument[]> {
   const { data } = await api.get(`/investor-documents/investor/${investorId}`);
-  return (data?.data ?? []).map((d: any) => ({
+  return (data?.data ?? []).map((d: ApiInvestorDocument) => ({
     id: d.document_id,
     name: d.document_name,
     mimeType: d.mime_type,

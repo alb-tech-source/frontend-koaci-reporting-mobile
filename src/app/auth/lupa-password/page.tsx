@@ -8,6 +8,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { forgotPassword } from "@/features/auth/api";
+import { getErrorMessage } from "@/shared/lib/axios";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,8 +24,13 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword(email);
       setSubmitted(true); // tampilkan state "Cek Email Anda" (UI sudah ada dari Lovable)
-    } catch {
-      setError("Gagal mengirim link reset. Periksa email Anda dan coba lagi.");
+    } catch (err) {
+      setError(
+        getErrorMessage(
+          err,
+          "Gagal mengirim link reset. Periksa email Anda dan coba lagi.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -66,13 +72,19 @@ export default function ForgotPasswordPage() {
                     required
                   />
                 </div>
+                {error ? (
+                  <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+                    {error}
+                  </p>
+                ) : null}
                 <Button
                   type="submit"
                   variant="primary"
                   size="touch"
                   className="w-full"
+                  disabled={loading}
                 >
-                  Kirim Link Reset
+                  {loading ? "Mengirim..." : "Kirim Link Reset"}
                 </Button>
               </form>
             </>

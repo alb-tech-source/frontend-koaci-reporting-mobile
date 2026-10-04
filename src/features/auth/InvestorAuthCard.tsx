@@ -2,18 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import { Sparkles } from "lucide-react";
 
 import { AuthDivider, GoogleAuthButton } from "./GoogleAuthButton";
 import { LoginForm, type LoginFormValues } from "./LoginForm";
 import { RegisterForm, type RegisterFormValues } from "./RegisterForm";
 
-import {
-  login,
-  registerWithEmail,
-  fetchCurrentUser,
-} from "@/features/auth/api";
-import { useAuthStore } from "@/shared/store/authStore";
+import { login, registerWithEmail } from "@/features/auth/api";
+import { establishSession, homePathForRole } from "@/features/auth/session";
+import { getErrorMessage } from "@/shared/lib/axios";
 
 type AuthTab = "login" | "register";
 
@@ -24,9 +22,17 @@ const tabs: { key: AuthTab; label: string }[] = [
   { key: "register", label: "Daftar" },
 ];
 
+function loginErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status;
+    if (status === 401 || status === 404) return "Email atau password salah.";
+    return getErrorMessage(err, "Gagal masuk. Periksa koneksi Anda dan coba lagi.");
+  }
+  return err instanceof Error ? err.message : "Gagal masuk. Coba lagi.";
+}
+
 export function InvestorAuthCard() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
 
   const [tab, setTab] = useState<AuthTab>("login");
   const [loading, setLoading] = useState(false);
@@ -51,27 +57,10 @@ export function InvestorAuthCard() {
         throw new Error("Gagal login dari server.");
       }
 
-      const profileResponse = await fetchCurrentUser();
-
-      if (profileResponse?.success && profileResponse.data) {
-        const activeRole = profileResponse?.data.user.role.role_name || "user";
-        console.log("Active Role:", activeRole);
-
-        setAuth({ ...profileResponse.data.user, role: activeRole });
-
-        document.cookie = `user_role=${activeRole}; path=/; max-age=86400; SameSite=Lax`;
-
-        if (activeRole === "investor") router.push("/investor/beranda");
-        else router.push("/user/beranda");
-      } else {
-        throw new Error("Gagal membaca profil pengguna.");
-      }
-    } catch (err: any) {
-      if (err?.response?.status === 404 || err?.response?.status === 401) {
-        setError("Email atau password salah.");
-      } else {
-        setError(err?.response?.data.message);
-      }
+      const role = await establishSession();
+      router.push(homePathForRole(role));
+    } catch (err) {
+      setError(loginErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -92,23 +81,17 @@ export function InvestorAuthCard() {
       setSuccess("Pendaftaran berhasil! Silakan login.");
       setFormKey((k) => k + 1);
       setTab("login");
-    } catch {
-      setError("Gagal mendaftar. Email mungkin sudah terdaftar.");
+    } catch (err) {
+      setError(
+        getErrorMessage(err, "Gagal mendaftar. Email mungkin sudah terdaftar."),
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleAuth = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      window.location.href = `${BASE_URL}/auth/google`;
-    } catch (err) {
-      setError("Login Google gagal. Pastikan email Anda terdaftar.");
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleAuth = () => {
+    window.location.href = `${BASE_URL}/auth/google`;
   };
 
   return (

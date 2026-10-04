@@ -4,21 +4,49 @@ import { persist } from "zustand/middleware";
 export interface UserProfile {
   user_id: string;
   email: string;
-  role: {
-    role_name: string;
-    permissions: string[];
-  };
-  firstname?: string;
-  lastname?: string;
-  [key: string]: unknown;
+  role: string;
+  permissions: string[];
+  firstname: string;
+  lastname: string;
   is_active?: boolean;
   last_login_at?: string;
+}
+
+// Bentuk user dari backend (GET /auth/me → data.user) maupun sesi lama di localStorage
+export interface RawUser {
+  user_id?: string;
+  email?: string;
+  role?: string | { role_name?: string; permissions?: string[] } | null;
+  permissions?: string[];
+  firstname?: string | null;
+  lastname?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  is_active?: boolean;
+  last_login_at?: string | null;
+}
+
+// Role kadang berbentuk string, kadang objek { role_name, permissions }
+export function normalizeUser(raw: RawUser): UserProfile {
+  const roleObject = typeof raw.role === "object" ? raw.role : null;
+  const roleName = typeof raw.role === "string" ? raw.role : roleObject?.role_name;
+
+  return {
+    user_id: raw.user_id ?? "",
+    email: raw.email ?? "",
+    role: roleName || "user",
+    permissions: raw.permissions ?? roleObject?.permissions ?? [],
+    firstname: raw.firstname ?? raw.firstName ?? "",
+    lastname: raw.lastname ?? raw.lastName ?? "",
+    is_active: raw.is_active,
+    last_login_at: raw.last_login_at ?? undefined,
+  };
 }
 
 interface AuthState {
   user: UserProfile | null;
   isAuthenticated: boolean;
-  setAuth: (payload: any) => void; // Gunakan 'any' untuk menangkap respon mentah backend
+  setAuth: (user: UserProfile) => void;
   updateUser: (patch: Partial<UserProfile>) => void; // Patch sebagian data user (mis. nama setelah edit profil)
   clearAuth: () => void;
 }
@@ -30,41 +58,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
 
-      setAuth: (payload) => {
-        if (!payload) return;
-
-        // 🔥 LOGIKA PERATAAAN (FLATTENING) OBJEK BERSARANG
-        // Ambil objek user yang ada di dalam payload (jika backend mengirim nested)
-        const nestedUser = payload.user || {};
-
-        // Rakit ulang menjadi satu objek datar yang seragam
-        const flattenedUser: UserProfile = {
-          user_id: nestedUser.user_id || payload.user_id || payload.id || "",
-          email: nestedUser.email || payload.email || "",
-          // Kadang role berbentuk string, kadang berbentuk objek { role_name: "..." }
-          role:
-            typeof payload.role === "object"
-              ? payload.role?.role_name
-              : payload.role || "user",
-          permissions: payload.permissions || nestedUser.permission_ids || [],
-          // Konsisten dengan interface UserProfile (firstname/lastname)
-          firstname:
-            nestedUser.firstname ||
-            payload.firstname ||
-            payload.firstName ||
-            "",
-          lastname:
-            nestedUser.lastname || payload.lastname || payload.lastName || "",
-
-          // Gabungkan sisa properti lainnya (tanggal login, is_active, dll)
-          ...nestedUser,
-
-          // Hapus key 'user' agar tidak terjadi lagi user.user di seluruh aplikasi
-          user: undefined,
-        };
-
-        set({ user: flattenedUser, isAuthenticated: true });
-      },
+      setAuth: (user) => set({ user, isAuthenticated: true }),
 
       // Patch sebagian data user tanpa relogin (persist otomatis ke localStorage)
       updateUser: (patch) =>
@@ -76,22 +70,17 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "koaci-auth-storage",
-      version: 1,
-      // Normalisasi sesi lama: versi sebelumnya menyimpan firstName/lastName (camelCase)
+      version: 2,
+      // Normalisasi sesi lama: role berbentuk objek dan nama camelCase (firstName/lastName)
       migrate: (persisted) => {
-        const state = persisted as { user?: Record<string, unknown> } | undefined;
-        const user = state?.user;
-        if (user) {
-          if (user.firstname === undefined && user.firstName !== undefined) {
-            user.firstname = user.firstName;
-          }
-          if (user.lastname === undefined && user.lastName !== undefined) {
-            user.lastname = user.lastName;
-          }
-          delete user.firstName;
-          delete user.lastName;
-        }
-        return state as AuthState;
+        const state = persisted as
+          | { user?: RawUser | null; isAuthenticated?: boolean }
+          | undefined;
+        const user = state?.user ? normalizeUser(state.user) : null;
+        return {
+          user,
+          isAuthenticated: Boolean(user && state?.isAuthenticated),
+        } as AuthState;
       },
     },
   ),

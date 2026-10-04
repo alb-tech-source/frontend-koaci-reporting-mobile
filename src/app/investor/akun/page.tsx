@@ -2,7 +2,6 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, LogOut } from "lucide-react";
-import { toast } from "sonner";
 
 import { InvestorShell } from "@/components/layout/InvestorShell";
 import {
@@ -35,7 +34,6 @@ import {
   type InvestorDocument,
 } from "@/features/investor-akun/documents";
 import { fetchInvestorProfile } from "@/features/investor-akun/api";
-import { sendVerifyEmail } from "@/features/auth/api";
 import { HeirTab } from "@/features/investor-akun/HeirTab";
 import { ProfileTab } from "@/features/investor-akun/ProfileTab";
 import {
@@ -113,21 +111,6 @@ function InvestorAkunContent() {
   const displayFirst = authUser?.firstname || profile?.firstName || "Investor";
   const displayLast = authUser?.lastname || profile?.lastName || "";
 
-  const requestVerification = async () => {
-    if (!displayEmail) {
-      toast.error("Email tidak ditemukan. Silakan relog.");
-      return;
-    }
-    try {
-      console.log("Requesting verification email for:", displayEmail);
-      await sendVerifyEmail(displayEmail);
-      toast.success("Email verifikasi berhasil dikirim!");
-      void queryClient.invalidateQueries({ queryKey: ["investor", "profile"] });
-    } catch {
-      toast.error("Gagal mengirim email verifikasi. Coba lagi nanti.");
-    }
-  };
-
   const header = (
     <div className="px-4 py-3">
       <h1 className="text-base font-semibold tracking-tight text-foreground">
@@ -195,21 +178,15 @@ function InvestorAkunContent() {
           </TabsList>
 
           <TabsContent value="profil" className="mt-3">
-            <ProfileTab
-              profile={profile}
-              onRequestVerification={requestVerification}
-            />
+            <ProfileTab profile={profile} />
           </TabsContent>
 
           <TabsContent value="ahli-waris" className="mt-3">
-            <HeirTab
-              profile={profile}
-              onRequestVerification={requestVerification}
-            />
+            <HeirTab profile={profile} />
           </TabsContent>
 
           <TabsContent value="dokumen" className="mt-3">
-            {documentsQuery.isPending ? (
+            {documentsQuery.isLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-16 w-full rounded-2xl" />
                 <Skeleton className="h-16 w-full rounded-2xl" />

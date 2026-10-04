@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Loader2, Pencil } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query"; // ✅ Tambahkan ini
-import { toast } from "sonner"; // ✅ Tambahkan ini
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/shared/lib/axios";
 import { useAuthStore } from "@/shared/store/authStore";
 
 import { Button } from "@/shared/components/ui/button";
@@ -19,7 +20,6 @@ import {
 import { Textarea } from "@/shared/components/ui/textarea";
 
 import { FieldRow } from "./FieldRow";
-import { VerifyEmailBanner } from "./VerifyEmailBanner";
 import {
   genderLabel,
   investorTypeLabel,
@@ -28,18 +28,16 @@ import {
   type InvestorProfile,
 } from "./types";
 import { INDONESIAN_BANKS } from "./utils";
-import { saveInvestorProfile } from "./api"; // ✅ Import fungsi save yang baru
+import { saveInvestorProfile } from "./api";
 
 interface ProfileTabProps {
   profile: InvestorProfile;
-  onRequestVerification: () => Promise<void>; // ✅ Perbaiki tipe ini
 }
 
-export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileTabProps>) {
+export function ProfileTab({ profile }: Readonly<ProfileTabProps>) {
   const queryClient = useQueryClient();
   // Jika investorId kosong, otomatis paksa buka form edit karena harus diisi!
   const [editing, setEditing] = useState(!profile.investorId);
-  const [sentTo, setSentTo] = useState<string | null>(null);
   const [draft, setDraft] = useState(profile);
 
   const set = <K extends keyof InvestorProfile>(key: K, value: InvestorProfile[K]) =>
@@ -47,7 +45,6 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
 
   const startEdit = () => {
     setDraft(profile);
-    setSentTo(null);
     setEditing(true);
   };
 
@@ -64,20 +61,21 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
       queryClient.invalidateQueries({ queryKey: ["investor", "profile"] });
       setEditing(false);
     },
-    onError: () => {
-      toast.error("Gagal menyimpan profil.");
+    onError: (err) => {
+      toast.error(getErrorMessage(err, "Gagal menyimpan profil."));
     }
   });
 
-  const handleSubmit = async (event: FormEvent) => {
+  const nikInvalid = draft.nik.length !== 16;
+
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+    if (nikInvalid) return;
     saveMutation.mutate(draft);
   };
 
   return (
     <div className="space-y-3">
-      {sentTo ? <VerifyEmailBanner email={sentTo} /> : null}
-
       <Card className="p-4">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-sm font-semibold text-foreground">Data Pribadi</h2>
@@ -160,7 +158,7 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
                 onChange={(e) => set("nik", e.target.value.replace(/\D/g, ""))}
                 required
               />
-              {draft.nik.length > 0 && draft.nik.length !== 16 ? (
+              {draft.nik.length > 0 && nikInvalid ? (
                 <p className="text-xs text-danger">NIK harus 16 digit.</p>
               ) : null}
             </div>
@@ -170,8 +168,10 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
               <Input
                 id="phone"
                 inputMode="tel"
+                minLength={10}
+                maxLength={15}
                 value={draft.phone}
-                onChange={(e) => set("phone", e.target.value)}
+                onChange={(e) => set("phone", e.target.value.replace(/[^0-9+]/g, ""))}
                 required
               />
             </div>
@@ -192,8 +192,9 @@ export function ProfileTab({ profile, onRequestVerification }: Readonly<ProfileT
               <Input
                 id="accountNumber"
                 inputMode="numeric"
+                maxLength={30}
                 value={draft.accountNumber}
-                onChange={(e) => set("accountNumber", e.target.value)}
+                onChange={(e) => set("accountNumber", e.target.value.replace(/\D/g, ""))}
                 required
               />
             </div>

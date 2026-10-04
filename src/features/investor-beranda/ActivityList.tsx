@@ -1,7 +1,7 @@
 import { FileText, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 
 import { Card } from "@/shared/components/ui/card";
-import { formatRelativeTime } from "@/features/investor-beranda/utils";
+import { formatRelativeTime } from "@/shared/lib/format";
 
 import type { ActivityType, BerandaActivity } from "./types";
 

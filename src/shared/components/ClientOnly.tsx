@@ -1,19 +1,16 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { useHydrated } from "@/shared/hooks/use-hydrated";
 
-export function ClientOnly({ 
-  children, 
-  fallback 
+export function ClientOnly({
+  children,
+  fallback
 }: Readonly<{ children: ReactNode; fallback?: ReactNode }>) {
-  const [hasMounted, setHasMounted] = useState(false);
+  const hydrated = useHydrated();
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  if (!hasMounted) {
+  if (!hydrated) {
     return (
       <>{fallback || (
         <div className="p-4 space-y-4">

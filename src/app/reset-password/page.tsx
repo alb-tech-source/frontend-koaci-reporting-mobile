@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
@@ -45,8 +46,8 @@ async function handleResetPasswordSubmit(
   try {
     await resetPassword(token, pw);
     setDone(true);
-  } catch (err: any) {
-    if (err?.response?.status === 400) {
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 400) {
       setError("Link sudah kedaluwarsa atau tidak valid. Minta link baru.");
     } else {
       setError("Gagal mengubah password. Silakan coba lagi.");
@@ -67,7 +68,7 @@ function InvalidTokenNotice() {
         Link reset password tidak valid atau sudah kedaluwarsa. Silakan minta
         ulang link reset password Anda.
       </p>
-      <Link href="/login/lupa-password">
+      <Link href="/auth/lupa-password">
         <Button variant="outline" size="touch">
           Kembali ke Lupa Password
         </Button>

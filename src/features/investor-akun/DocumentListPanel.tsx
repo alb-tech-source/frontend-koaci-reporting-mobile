@@ -15,6 +15,8 @@ import { getDocumentDownloadUrl, type InvestorDocument } from "./documents";
 import { AddDocumentDialog } from "./AddDocumentDialog";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/shared/lib/axios";
+import { downloadFromUrl } from "@/shared/lib/download";
+import { formatDateID, formatFileSize } from "@/shared/lib/format";
 
 // Prioritaskan pesan dari Error aplikasi (mis. helper upload), lalu pesan backend
 function errMsg(err: unknown, fallback: string): string {
@@ -81,22 +83,7 @@ export function DocumentListPanel({
       const url = await getDocumentDownloadUrl(doc.id);
       if (!url) throw new Error("URL unduhan tidak valid");
 
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("CORS terblokir");
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = doc.name || "dokumen";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(blobUrl);
-      } catch {
-        window.open(url, "_blank", "noopener,noreferrer");
-      }
+      await downloadFromUrl(url, doc.name || "dokumen");
     } catch {
       toast.error("Gagal mengunduh dokumen.");
     } finally {
@@ -132,8 +119,8 @@ export function DocumentListPanel({
                 <div className="truncate">
                   <p className="text-sm font-medium truncate">{doc.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {(doc.sizeBytes / 1024).toFixed(1)} KB •{" "}
-                    {new Date(doc.uploadedAt).toLocaleDateString()}
+                    {formatFileSize(doc.sizeBytes)} •{" "}
+                    {formatDateID(doc.uploadedAt)}
                   </p>
                 </div>
               </div>
@@ -141,6 +128,7 @@ export function DocumentListPanel({
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label={`Unduh ${doc.name}`}
                   onClick={() => handleDownload(doc)}
                   disabled={downloadingId === doc.id}
                 >

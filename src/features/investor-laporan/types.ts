@@ -22,3 +22,8 @@ export interface MyReportingMedia {
   fileSizeBytes: number;
   uploadedAt: string;
 }
+
+export interface MyReportingMediaStream {
+  url: string;
+  mimeType: string; // kosong jika backend tidak mengetahuinya
+}

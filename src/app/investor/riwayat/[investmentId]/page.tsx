@@ -16,8 +16,9 @@ import { Skeleton } from "@/shared/components/ui/skeleton";
 
 import { fetchMyInvestments } from "@/features/investor-portofolio/api";
 import { fetchMyReceipts, getReceiptDownloadUrl } from "@/features/investor-portofolio/receiptApi";
-import { formatFileSize, statusBadgeVariant, statusLabel } from "@/features/investor-portofolio/utils";
-import { formatDateID, formatIDR } from "@/shared/lib/format";
+import { statusBadgeVariant, statusLabel } from "@/features/investor-portofolio/utils";
+import { downloadFromUrl } from "@/shared/lib/download";
+import { formatDateID, formatFileSize, formatIDR, formatPercent } from "@/shared/lib/format";
 
 function InvestmentDetailContent() {
   const params = useParams();
@@ -34,7 +35,7 @@ function InvestmentDetailContent() {
 
   const header = (
     <div className="flex items-center gap-2 px-2 py-2">
-      <Button variant="ghost" size="icon" onClick={() => router.push("/investor/portofolio")}>
+      <Button variant="ghost" size="icon" onClick={() => router.push("/investor/riwayat")}>
         <ArrowLeft className="h-5 w-5" />
       </Button>
       <h1 className="text-base font-semibold text-foreground">Detail Investasi</h1>
@@ -48,22 +49,7 @@ function InvestmentDetailContent() {
       const url = await getReceiptDownloadUrl(myReceipt.receiptId);
       if (!url) throw new Error("URL unduhan tidak valid");
 
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("CORS terblokir");
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = myReceipt.receiptName || "kwitansi_investasi";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(blobUrl);
-      } catch {
-        window.open(url, "_blank", "noopener,noreferrer");
-      }
+      await downloadFromUrl(url, myReceipt.receiptName || "kwitansi_investasi");
     } catch {
       toast.error("Gagal mengunduh kwitansi.");
     } finally {
@@ -86,8 +72,8 @@ function InvestmentDetailContent() {
           <AlertTriangle className="h-6 w-6" />
         </div>
         <p className="text-sm text-muted-foreground">Data investasi tidak ditemukan.</p>
-        <Button variant="outline" size="touch" onClick={() => router.push("/investor/portofolio")}>
-          Kembali ke Portofolio
+        <Button variant="outline" size="touch" onClick={() => router.push("/investor/riwayat")}>
+          Kembali ke Riwayat
         </Button>
       </Card>
     );
@@ -131,7 +117,22 @@ function InvestmentDetailContent() {
           </div>
           <Separator />
           <Row label="Kebutuhan Pendanaan" value={formatIDR(investment.fundingRequired)} />
-          <Row label="Progress Proyek" value={`${investment.latestProgress ?? 0}%`} />
+          <Row
+            label="Dana Terkumpul"
+            value={
+              investment.fundingCollected === null || investment.fundingProgress === null
+                ? "—"
+                : `${formatIDR(investment.fundingCollected)} (${investment.fundingProgress}%)`
+            }
+          />
+          <Row
+            label="Progress Proyek"
+            value={
+              investment.projectProgress === null
+                ? "Belum ada laporan"
+                : formatPercent(investment.projectProgress)
+            }
+          />
         </Card>
 
         <Card className="space-y-3 p-4">

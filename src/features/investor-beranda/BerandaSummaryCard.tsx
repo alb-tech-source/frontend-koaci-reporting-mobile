@@ -1,7 +1,7 @@
 import { Briefcase, TrendingUp } from "lucide-react";
 
 import { Card } from "@/shared/components/ui/card";
-import { formatIDR } from "@/features/investor-portofolio/utils";
+import { formatIDR } from "@/shared/lib/format";
 
 interface BerandaSummaryCardProps {
   totalActiveInvestment: number;

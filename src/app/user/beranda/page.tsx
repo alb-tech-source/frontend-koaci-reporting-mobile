@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -17,10 +16,9 @@ import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { userNav } from "@/features/user-area/nav";
 
+import { useHydrated } from "@/shared/hooks/use-hydrated";
+import { SUPPORT_EMAIL, WHATSAPP_CS_URL } from "@/shared/lib/support";
 import { useAuthStore } from "@/shared/store/authStore";
-
-const SUPPORT_EMAIL = "admin@koaci.id";
-const WHATSAPP_CS_URL = "https://wa.me/6281122334455";
 
 function getInitials(name: string) {
   if (!name) return "U";
@@ -47,9 +45,7 @@ const highlights: { icon: LucideIcon; title: string; desc: string }[] = [
 
 export default function UserBerandaPage() {
   const userState = useAuthStore((state) => state.user);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const displayName = userState?.firstname ? `${userState.firstname} ${userState.lastname ?? ''}`.trim() : "Pengguna";
   

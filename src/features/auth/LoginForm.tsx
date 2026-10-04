@@ -24,7 +24,7 @@ export function LoginForm({
   loading,
   errorMessage,
   onSubmit,
-  forgotPasswordHref = "/login/lupa-password", 
+  forgotPasswordHref = "/auth/lupa-password",
 }: Readonly<LoginFormProps>) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
