@@ -1,4 +1,0 @@
-allowBuilds:
-  node-base64: true
-  sharp: true
-  unrs-resolver: true
