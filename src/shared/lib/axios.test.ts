@@ -21,6 +21,8 @@ function useHandler(handler: Handler) {
     const response = { data: {}, status, statusText: "", headers: {}, config };
 
     if (status >= 200 && status < 300) return response;
+    // Status 0 = jaringan terputus: error tanpa response
+    if (status === 0) throw new AxiosError("Network Error", "ERR_NETWORK", config);
     throw new AxiosError(`HTTP ${status}`, undefined, config, null, response);
   };
 }
@@ -68,6 +70,29 @@ describe("interceptor refresh token", () => {
     ]);
   });
 
+  it("memperpanjang cookie role selama umur refresh token setelah refresh berhasil", async () => {
+    useHandler((config, attempt) => {
+      if (config.url === "/auth/refresh") return 200;
+      return attempt === 1 ? 401 : 200;
+    });
+
+    await api.get("/project-investments/own/investments");
+
+    expect(fakeDocument.cookie).toContain("user_role=investor;");
+    expect(fakeDocument.cookie).toContain(`max-age=${7 * 24 * 60 * 60}`);
+  });
+
+  it("me-refresh lalu mengulang logout agar cookie sesi di server ikut terhapus", async () => {
+    useHandler((config, attempt) => {
+      if (config.url === "/auth/refresh") return 200;
+      return attempt === 1 ? 401 : 200;
+    });
+
+    await api.post("/auth/logout");
+
+    expect(calls).toEqual(["/auth/logout", "/auth/refresh", "/auth/logout"]);
+  });
+
   it("hanya me-refresh sekali untuk beberapa request yang gagal bersamaan", async () => {
     useHandler((config, attempt) => {
       if (config.url === "/auth/refresh") return 200;
@@ -79,7 +104,29 @@ describe("interceptor refresh token", () => {
     expect(calls.filter((url) => url === "/auth/refresh")).toHaveLength(1);
   });
 
-  it("membersihkan sesi dan kembali ke halaman login jika refresh gagal", async () => {
+  it("tidak mengakhiri sesi jika refresh gagal karena gangguan server", async () => {
+    useHandler((config) => (config.url === "/auth/refresh" ? 503 : 401));
+
+    await expect(api.get("/project-reportings/own")).rejects.toMatchObject({
+      response: { status: 503 },
+    });
+
+    expect(calls).toEqual(["/project-reportings/own", "/auth/refresh"]);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(fakeDocument.cookie).toBe("");
+    expect(fakeWindow.location.href).toBe("/investor/beranda");
+  });
+
+  it("tidak mengakhiri sesi jika refresh gagal karena jaringan terputus", async () => {
+    useHandler((config) => (config.url === "/auth/refresh" ? 0 : 401));
+
+    await expect(api.get("/project-reportings/own")).rejects.toBeInstanceOf(AxiosError);
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(fakeWindow.location.href).toBe("/investor/beranda");
+  });
+
+  it("membersihkan sesi dan kembali ke halaman login jika refresh ditolak", async () => {
     useHandler(() => 401);
 
     await expect(api.get("/project-reportings/own")).rejects.toBeInstanceOf(AxiosError);

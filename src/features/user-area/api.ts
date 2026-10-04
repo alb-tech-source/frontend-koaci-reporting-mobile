@@ -1,38 +1,43 @@
-export interface PublicProduct {
+import api from "@/shared/lib/axios";
+import type { ProjectStatus } from "@/features/investor-portofolio/types";
+
+export interface PublicProject {
   id: string;
   name: string;
-  scheme: "Musyarakah" | "Mudharabah";
-  duration: string;
-  returnRange: string;
+  companyName: string;
+  industrySector: string | null;
+  fundingRequired: number;
+  status: ProjectStatus;
 }
 
-export const publicProducts: PublicProduct[] = [
-  {
-    id: "p1",
-    name: "Proyek Properti Syariah A",
-    scheme: "Musyarakah",
-    duration: "12 bulan",
-    returnRange: "8–12% p.a.",
-  },
-  {
-    id: "p2",
-    name: "Pembiayaan UMKM Kuliner",
-    scheme: "Mudharabah",
-    duration: "9 bulan",
-    returnRange: "9–13% p.a.",
-  },
-  {
-    id: "p3",
-    name: "Kemitraan Agribisnis Hijau",
-    scheme: "Musyarakah",
-    duration: "18 bulan",
-    returnRange: "10–14% p.a.",
-  },
-  {
-    id: "p4",
-    name: "Modal Kerja Distribusi Halal",
-    scheme: "Mudharabah",
-    duration: "6 bulan",
-    returnRange: "7–10% p.a.",
-  },
-];
+// Bentuk item GET /projects/public: hanya proyek yang ditandai is_public oleh admin
+interface ApiPublicProject {
+  project_id?: string;
+  project_name?: string | null;
+  funding_required?: string | number;
+  status?: string;
+  company?: {
+    company_name?: string;
+    industry_sector?: string | null;
+  } | null;
+}
+
+export function mapPublicProject(raw: ApiPublicProject): PublicProject {
+  const companyName = raw.company?.company_name || "-";
+
+  return {
+    id: raw.project_id ?? "",
+    // project_name opsional di backend; proyek tanpa nama memakai nama perusahaan
+    name: raw.project_name?.trim() || companyName,
+    companyName,
+    industrySector: raw.company?.industry_sector || null,
+    fundingRequired: Number(raw.funding_required) || 0,
+    status: (raw.status as ProjectStatus) || "open",
+  };
+}
+
+export async function fetchPublicProjects(): Promise<PublicProject[]> {
+  const { data } = await api.get("/projects/public", { params: { limit: 100 } });
+  const items: ApiPublicProject[] = data?.data ?? [];
+  return items.map(mapPublicProject);
+}

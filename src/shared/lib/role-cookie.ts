@@ -1,11 +1,12 @@
 const ROLE_COOKIE = "user_role";
-const ONE_DAY_SECONDS = 60 * 60 * 24;
+// Sama dengan umur refresh token backend; diperpanjang setiap refresh berhasil
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 // Cookie ini hanya dibaca proxy.ts untuk mengarahkan route.
 // Otorisasi data tetap ditentukan backend lewat cookie httpOnly.
 export function setRoleCookie(role: string) {
   if (typeof document === "undefined") return;
-  document.cookie = `${ROLE_COOKIE}=${encodeURIComponent(role)}; path=/; max-age=${ONE_DAY_SECONDS}; SameSite=Lax`;
+  document.cookie = `${ROLE_COOKIE}=${encodeURIComponent(role)}; path=/; max-age=${SESSION_MAX_AGE_SECONDS}; SameSite=Lax`;
 }
 
 export function clearRoleCookie() {
